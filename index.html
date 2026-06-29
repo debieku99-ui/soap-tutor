@@ -1217,10 +1217,14 @@ async function callClaude(userMsg) {
 
   var nvidiaMessages = [{ role: "system", content: system }].concat(st.history);
 
+  // Use no-cors workaround for Apps Script CORS limitation
+  var formData = new FormData();
+  formData.append("payload", JSON.stringify({ messages: nvidiaMessages }));
+
   var res = await fetch(PROXY_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages: nvidiaMessages })
+    body: formData,
+    redirect: "follow"
   });
   if (!res.ok) { var t = await res.text(); throw new Error("Proxy "+res.status+": "+t); }
   var data  = await res.json();
