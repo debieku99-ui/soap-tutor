@@ -799,6 +799,30 @@ textarea::placeholder { color: var(--ink-dim); }
 }
 .saved-del-btn:hover { background: var(--red-lt); color: var(--red); }
 
+/* Full-width score layout */
+.msg.bot.full-width { max-width: 100%; align-self: stretch; }
+.msg.bot.full-width .bubble { flex:1; border-radius:var(--radius); }
+.score-full-wrap { display:flex; flex-direction:column; gap:12px; width:100%; }
+.score-numbers {
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  padding:12px 16px; background:var(--teal); border-radius:var(--radius-sm);
+  color:white; font-family:'JetBrains Mono',monospace; font-size:13px;
+}
+.score-num-item { display:flex; align-items:center; gap:5px; }
+.score-num-label { font-size:11px; opacity:0.8; }
+.score-num-val { font-weight:700; font-size:15px; }
+.score-total-val { margin-left:auto; font-size:18px; font-weight:700; }
+.score-section {
+  padding:12px 16px; border-radius:var(--radius-sm);
+  border:1px solid var(--border); background:var(--surface2);
+}
+.score-section-title {
+  font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--ink-dim); margin-bottom:8px;
+}
+.score-body { font-size:13.5px; line-height:1.75; color:var(--ink); }
+.score-body b { font-weight:600; }
+
 /* Verbal summary card */
 .verbal-card {
   margin-top: 14px;
@@ -1317,7 +1341,95 @@ function renderVerbalCard(en, zh) {
   return card;
 }
 
+function formatScoreText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/【(.*?)】/g, "<b style='color:var(--teal)'>【$1】</b>")
+    .replace(/✓([^\n]*)/g, "<span class='fb-item fb-good'>$1</span>")
+    .replace(/△([^\n]*)/g, "<span class='fb-item fb-warn'>$1</span>")
+    .replace(/✗([^\n]*)/g, "<span class='fb-item fb-bad'>$1</span>")
+    .replace(/→([^\n]*)/g, "<span class='fb-item fb-q'>$1</span>")
+    .replace(/\n/g, "<br>");
+}
+
+function renderScoreMsg(text) {
+  var wrap = document.createElement("div");
+  wrap.className = "msg bot full-width";
+  var av = document.createElement("div");
+  av.className = "msg-avatar bot-av"; av.textContent = "Rx";
+  var bub = document.createElement("div");
+  bub.className = "bubble";
+  bub.style.cssText = "width:100%;max-width:100%;border-radius:var(--radius);";
+
+  var inner = document.createElement("div");
+  inner.className = "score-full-wrap";
+
+  // Score number bar
+  var sm = text.match(/S[\uff1a:\s]+(\d+)\s*\/\s*5[\s\S]*?O[\uff1a:\s]+(\d+)\s*\/\s*10[\s\S]*?A[\uff1a:\s]+(\d+)\s*\/\s*25[\s\S]*?P[\uff1a:\s]+(\d+)\s*\/\s*10/i);
+  if (sm) {
+    var total = +sm[1] + +sm[2] + +sm[3] + +sm[4];
+    var numBar = document.createElement("div");
+    numBar.className = "score-numbers";
+    numBar.innerHTML =
+      "<div class='score-num-item'><span class='score-num-label'>S</span><span class='score-num-val'>" + sm[1] + "/5</span></div>" +
+      "<div class='score-num-item'><span class='score-num-label'>O</span><span class='score-num-val'>" + sm[2] + "/10</span></div>" +
+      "<div class='score-num-item'><span class='score-num-label'>A</span><span class='score-num-val'>" + sm[3] + "/25</span></div>" +
+      "<div class='score-num-item'><span class='score-num-label'>P</span><span class='score-num-val'>" + sm[4] + "/10</span></div>" +
+      "<div class='score-total-val'>" + total + " / 50</div>";
+    inner.appendChild(numBar);
+  }
+
+  // Strip score line and verbal block from body
+  var mainText = text
+    .replace(/【藥師 SOAP 評分】[\s\S]*?S[\uff1a:\s]+\d+.*?Total[\uff1a:\s]+\d+\s*\/\s*50/i, "")
+    .replace(/【藥師口頭摘要[^】]*】[\s\S]*$/, "")
+    .trim();
+
+  // Split into sections by 【...】 headers
+  var parts = mainText.split(/(【[^】]+】)/);
+  var currentTitle = "";
+  var currentBody  = "";
+
+  function flushSection() {
+    if (!currentBody.trim()) return;
+    var sec = document.createElement("div");
+    sec.className = "score-section";
+    var html = "";
+    if (currentTitle) {
+      html += "<div class='score-section-title'>" + currentTitle.replace(/[【】]/g,"") + "</div>";
+    }
+    html += "<div class='score-body'>" + formatScoreText(currentBody.trim()) + "</div>";
+    sec.innerHTML = html;
+    inner.appendChild(sec);
+    currentTitle = "";
+    currentBody  = "";
+  }
+
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i].trim();
+    if (!p) continue;
+    if (/^【[^】]+】$/.test(p)) {
+      flushSection();
+      currentTitle = p;
+    } else {
+      currentBody += p + "\n";
+    }
+  }
+  flushSection();
+
+  // Verbal summary below all sections
+  var verbal = extractVerbalSummary(text);
+  if (verbal) inner.appendChild(renderVerbalCard(verbal.en, verbal.zh));
+
+  bub.appendChild(inner);
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+  return wrap;
+}
+
 function renderBotMsg(text) {
+  if (/【藥師 SOAP 評分】/.test(text)) return renderScoreMsg(text);
+
   var wrap = document.createElement("div");
   wrap.className = "msg bot";
   var av = document.createElement("div");
@@ -1328,15 +1440,15 @@ function renderBotMsg(text) {
   var mainText = text.replace(/【藥師口頭摘要[^】]*】[\s\S]*$/, "").trim();
   var html = mainText
     .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-    .replace(/【(.*?)】/g, '<b style="color:var(--teal)">【$1】</b>')
-    .replace(/\[S\]/g, '<span class="soap-tag tag-s">S</span>')
-    .replace(/\[O\]/g, '<span class="soap-tag tag-o">O</span>')
-    .replace(/\[A\]/g, '<span class="soap-tag tag-a">A</span>')
-    .replace(/\[P\]/g, '<span class="soap-tag tag-p">P</span>')
-    .replace(/✓([^\n]*)/g, '<span class="fb-item fb-good">$1</span>')
-    .replace(/△([^\n]*)/g, '<span class="fb-item fb-warn">$1</span>')
-    .replace(/✗([^\n]*)/g, '<span class="fb-item fb-bad">$1</span>')
-    .replace(/→([^\n]*)/g, '<span class="fb-item fb-q">$1</span>')
+    .replace(/【(.*?)】/g, "<b style='color:var(--teal)'>【$1】</b>")
+    .replace(/\[S\]/g, "<span class='soap-tag tag-s'>S</span>")
+    .replace(/\[O\]/g, "<span class='soap-tag tag-o'>O</span>")
+    .replace(/\[A\]/g, "<span class='soap-tag tag-a'>A</span>")
+    .replace(/\[P\]/g, "<span class='soap-tag tag-p'>P</span>")
+    .replace(/✓([^\n]*)/g, "<span class='fb-item fb-good'>$1</span>")
+    .replace(/△([^\n]*)/g, "<span class='fb-item fb-warn'>$1</span>")
+    .replace(/✗([^\n]*)/g, "<span class='fb-item fb-bad'>$1</span>")
+    .replace(/→([^\n]*)/g, "<span class='fb-item fb-q'>$1</span>")
     .replace(/\n/g, "<br>");
   bub.innerHTML = html;
   wrap.appendChild(av);
@@ -1346,6 +1458,7 @@ function renderBotMsg(text) {
   if (verbal) wrap.appendChild(renderVerbalCard(verbal.en, verbal.zh));
   return wrap;
 }
+
 
 function renderUserMsg(text) {
   var wrap = document.createElement("div");
