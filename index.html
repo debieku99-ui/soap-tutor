@@ -1415,6 +1415,7 @@ async function sendMessage() {
   }
   scrollBottom();
   if (currentCase === FREE_IDX && freeState.data) snapshotFreeState();
+  else if (currentCase < FREE_IDX) saveBuiltinState(currentCase);
   busy = false;
   document.getElementById("sendBtn").disabled = false;
   inp.focus();
@@ -1498,19 +1499,87 @@ function selectCase(idx) {
     chatArea.insertBefore(msgsDiv, inputArea);
     msgsDiv.appendChild(renderCaseCard(c));
 
-    var openMsg   = getOpenMsg(idx);
-    var welcomeEl = renderBotMsg(openMsg);
-    msgsDiv.appendChild(welcomeEl);
-    st.history.push({ role: "assistant", content: openMsg });
-    addQuickOptions(welcomeEl, getQuickOpts(idx));
+    // Try to restore from localStorage
+    var saved = loadBuiltinState(idx);
+    if (saved && saved.history && saved.history.length > 0) {
+      st.history = saved.history;
+      st.scores  = saved.scores;
+      st.step    = saved.step;
+
+      // Replay messages visually
+      saved.history.forEach(function(msg) {
+        if (msg.role === "assistant") msgsDiv.appendChild(renderBotMsg(msg.content));
+        else msgsDiv.appendChild(renderUserMsg(msg.content));
+      });
+
+      // Show restore notice
+      var notice = document.createElement("div");
+      notice.style.cssText = "text-align:center;font-size:11px;color:var(--ink-dim);padding:6px 0;";
+      notice.innerHTML = "↑ 上次的對話記錄已還原 &nbsp;·&nbsp; <a href='#' style='color:var(--teal);text-decoration:none;' onclick='clearCase("+idx+");return false;'>清除重新開始</a>";
+      msgsDiv.appendChild(notice);
+
+      updateScoreBars();
+      renderChain();
+    } else {
+      var openMsg   = getOpenMsg(idx);
+      var welcomeEl = renderBotMsg(openMsg);
+      msgsDiv.appendChild(welcomeEl);
+      st.history.push({ role: "assistant", content: openMsg });
+      addQuickOptions(welcomeEl, getQuickOpts(idx));
+    }
   }
 
   st.domNode.style.display = "flex";
   scrollBottom();
 }
 
+// ── Clear a built-in case and restart ──────────────────────
+function clearCase(idx) {
+  clearBuiltinState(idx);
+  caseState[idx].history     = [];
+  caseState[idx].scores      = { s:null, o:null, a:null, p:null };
+  caseState[idx].step        = 1;
+  caseState[idx].initialized = false;
+  if (caseState[idx].domNode) {
+    caseState[idx].domNode.remove();
+    caseState[idx].domNode = null;
+  }
+  selectCase(idx);
+}
+
 // ── localStorage save/restore ───────────────────────────────
-var STORAGE_KEY = "soap_tutor_free_cases";
+var STORAGE_KEY      = "soap_tutor_free_cases";
+var BUILTIN_KEY      = "soap_tutor_builtin";
+
+// ── Built-in case persistence ───────────────────────────────
+function saveBuiltinState(idx) {
+  var st = caseState[idx];
+  if (!st.history || st.history.length === 0) return;
+  try {
+    var saved = JSON.parse(localStorage.getItem(BUILTIN_KEY) || "{}");
+    saved[idx] = {
+      history: st.history,
+      scores:  st.scores,
+      step:    st.step
+    };
+    localStorage.setItem(BUILTIN_KEY, JSON.stringify(saved));
+  } catch(e) {}
+}
+
+function loadBuiltinState(idx) {
+  try {
+    var saved = JSON.parse(localStorage.getItem(BUILTIN_KEY) || "{}");
+    return saved[idx] || null;
+  } catch(e) { return null; }
+}
+
+function clearBuiltinState(idx) {
+  try {
+    var saved = JSON.parse(localStorage.getItem(BUILTIN_KEY) || "{}");
+    delete saved[idx];
+    localStorage.setItem(BUILTIN_KEY, JSON.stringify(saved));
+  } catch(e) {}
+}
 
 function loadSavedCases() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
