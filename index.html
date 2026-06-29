@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藥師 SOAP 導師｜DRP 思維訓練</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg:        #f5f4f0;
+  --surface:   #ffffff;
+  --surface2:  #f0efe9;
+  --border:    #e0ddd4;
+  --border2:   #ccc9be;
+
+  --ink:       #1a1916;
+  --ink-mid:   #4a4840;
+  --ink-dim:   #8c8a82;
+
+  --teal:      #0e7c72;
+  --teal-lt:   #e6f4f2;
+  --teal-mid:  #b2ddd8;
+  --amber:     #b45309;
+  --amber-lt:  #fef3c7;
+  --red:       #b91c1c;
+  --red-lt:    #fee2e2;
+  --blue:      #1d4ed8;
+  --blue-lt:   #dbeafe;
+
+  --s-color:   #0e7c72;
+  --o-color:   #1d4ed8;
+  --a-color:   #b45309;
+  --p-color:   #7c3aed;
+
+  --radius:    10px;
+  --radius-sm: 6px;
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--teal);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.header-sub {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-top: 1px;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pill-teal { background: var(--teal-lt); color: var(--teal); border: 1px solid var(--teal-mid); }
+.pill-amber { background: var(--amber-lt); color: var(--amber); border: 1px solid #fcd34d; }
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 248px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sb-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sb-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+
+/* Case list */
+.case-btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--ink);
+  margin-bottom: 6px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.case-btn:hover { border-color: var(--teal); background: var(--teal-lt); }
+.case-btn.active { border-color: var(--teal); background: var(--teal-lt); }
+
+.case-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.case-desc { font-size: 11px; color: var(--ink-dim); }
+
+.diff-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  margin-right: 4px;
+}
+.diff-1 { background: #dcfce7; color: #15803d; }
+.diff-2 { background: var(--amber-lt); color: var(--amber); }
+.diff-3 { background: var(--red-lt); color: var(--red); }
+
+/* DRP Reasoning Chain */
+.drp-chain { display: flex; flex-direction: column; gap: 4px; }
+
+.chain-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.chain-step.done {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.chain-step.current {
+  background: var(--teal-lt);
+  border-color: var(--teal-mid);
+  color: var(--teal);
+}
+
+.chain-step.locked {
+  color: var(--ink-dim);
+}
+
+.step-num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.chain-step.done .step-num { background: #86efac; color: #14532d; }
+.chain-step.current .step-num { background: var(--teal); color: white; }
+.chain-step.locked .step-num { background: var(--border2); color: var(--ink-dim); }
+
+.step-text { line-height: 1.4; }
+.step-sub { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+
+/* Score panel */
+.score-grid { display: flex; flex-direction: column; gap: 7px; }
+
+.score-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.score-letter {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+}
+
+.sl-s { background: var(--s-color); }
+.sl-o { background: var(--o-color); }
+.sl-a { background: var(--a-color); }
+.sl-p { background: var(--p-color); }
+
+.score-bar-bg {
+  height: 5px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.score-num { font-size: 11px; color: var(--ink-mid); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+.score-total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Chat area ── */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+  min-height: 0;
+}
+
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Case card (top of conversation) */
+.case-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.case-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.patient-icon {
+  width: 36px; height: 36px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+.patient-name { font-size: 15px; font-weight: 700; }
+.patient-meta { font-size: 12px; color: var(--ink-dim); }
+
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.data-item {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+
+.data-key { font-size: 10px; color: var(--ink-dim); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.data-val { font-size: 13px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.data-val.abnormal { color: var(--red); }
+.data-val.borderline { color: var(--amber); }
+.data-val.normal { color: var(--teal); }
+
+/* Messages */
+.msg { display: flex; gap: 8px; max-width: 88%; }
+.msg.user { flex-direction: row-reverse; align-self: flex-end; }
+.msg.bot { align-self: flex-start; }
+
+.msg-avatar {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.bot-av { background: var(--teal); color: white; font-size: 13px; font-weight: 700; }
+.user-av { background: var(--surface2); border: 1px solid var(--border); }
+
+.bubble {
+  padding: 11px 15px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  box-shadow: var(--shadow);
+}
+
+.msg.bot .bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+  color: var(--ink);
+}
+
+.msg.user .bubble {
+  background: var(--teal);
+  color: white;
+  border-bottom-right-radius: 3px;
+}
+
+/* Bubble inner elements */
+.bubble b { font-weight: 600; }
+.bubble .hl-teal { color: var(--teal); font-weight: 600; }
+.bubble .hl-amber { color: var(--amber); font-weight: 600; }
+.bubble .hl-red { color: var(--red); font-weight: 600; }
+
+.soap-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+.tag-s { background: var(--s-color); }
+.tag-o { background: var(--o-color); }
+.tag-a { background: var(--a-color); }
+.tag-p { background: var(--p-color); }
+
+.notice-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.notice-tip { background: var(--teal-lt); border-left: 3px solid var(--teal); color: var(--teal); }
+.notice-warn { background: var(--amber-lt); border-left: 3px solid var(--amber); color: var(--amber); }
+.notice-check { background: #dcfce7; border-left: 3px solid #16a34a; color: #15803d; }
+
+.quick-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.qopt {
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.12s;
+  line-height: 1.5;
+}
+
+.qopt:hover {
+  border-color: var(--teal);
+  background: var(--teal-lt);
+  color: var(--teal);
+}
+
+/* Thinking */
+.thinking-wrap { display: flex; gap: 8px; align-self: flex-start; }
+
+.thinking-bubble {
+  padding: 11px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-bottom-left-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  box-shadow: var(--shadow);
+}
+
+.dot-row { display: flex; gap: 4px; }
+.dot-row span {
+  width: 6px; height: 6px;
+  background: var(--teal);
+  border-radius: 50%;
+  animation: pulse 1.3s infinite;
+  opacity: 0.5;
+}
+.dot-row span:nth-child(2) { animation-delay: 0.2s; }
+.dot-row span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+  40% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Score card in message */
+.score-card {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.score-card-header {
+  background: var(--surface2);
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mid);
+  border-bottom: 1px solid var(--border);
+}
+
+.score-card-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+
+/* Input */
+.input-area {
+  padding: 14px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+textarea {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13.5px;
+  padding: 9px 13px;
+  resize: none;
+  max-height: 120px;
+  min-height: 42px;
+  line-height: 1.55;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+textarea:focus { border-color: var(--teal); background: white; }
+textarea::placeholder { color: var(--ink-dim); }
+
+.send-btn {
+  width: 42px; height: 42px;
+  background: var(--teal);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-size: 17px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.send-btn:hover { background: #0a6560; }
+.send-btn:disabled { background: var(--border2); cursor: not-allowed; }
+
+/* Feedback sections */
+.fb-section { margin-top: 8px; }
+.fb-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); margin-bottom: 4px; }
+.fb-item { font-size: 13px; line-height: 1.6; padding: 2px 0; }
+.fb-good::before { content: "✓ "; color: #16a34a; font-weight: 600; }
+.fb-warn::before { content: "△ "; color: var(--amber); font-weight: 600; }
+.fb-bad::before  { content: "✗ "; color: var(--red); font-weight: 600; }
+.fb-q::before    { content: "→ "; color: var(--teal); font-weight: 600; }
+
+/* Free case button */
+.free-case-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 12px;
+  background: none;
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--ink-dim);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.free-case-btn:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--teal-lt);
+}
+.free-case-btn.active {
+  border-color: var(--teal);
+  border-style: solid;
+  color: var(--teal);
+  background: var(--teal-lt);
+}
+
+/* Modal overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+
+.modal-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+
+.modal-close {
+  width: 28px; height: 28px;
+  border: none;
+  background: var(--surface2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-mid);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--border); }
+
+.modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row.full { grid-template-columns: 1fr; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-mid);
+}
+
+.form-input, .form-textarea, .form-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--teal);
+  background: white;
+}
+.form-textarea { resize: vertical; min-height: 72px; line-height: 1.55; }
+
+/* Lab grid inside modal */
+.lab-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.lab-row { display: flex; gap: 6px; align-items: center; }
+.lab-name {
+  font-size: 11px;
+  color: var(--ink-mid);
+  width: 72px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.lab-val {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+}
+.lab-val:focus { border-color: var(--teal); background: white; }
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn-ghost { background: var(--surface2); color: var(--ink-mid); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--border); }
+.btn-primary { background: var(--teal); color: white; }
+.btn-primary:hover { background: #0a6560; }
+.btn-primary:disabled { background: var(--border2); cursor: not-allowed; }
+
+/* Free case header in chat */
+.free-case-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.free-case-header h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--teal);
+}
+.free-case-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  font-size: 12px;
+}
+.fc-label { color: var(--ink-dim); }
+.fc-val { color: var(--ink); font-weight: 500; }
+
+/* Saved cases list */
+.saved-case-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  transition: border-color 0.15s;
+}
+.saved-case-row:hover { border-color: var(--teal); }
+
+.saved-case-info {
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+.saved-case-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saved-case-meta {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saved-case-date {
+  font-size: 10px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+  opacity: 0.7;
+}
+.saved-score {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--teal-lt);
+  color: var(--teal);
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 4px;
+  border: 1px solid var(--teal-mid);
+}
+.saved-del-btn {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+.saved-del-btn:hover { background: var(--red-lt); color: var(--red); }
+
+/* Verbal summary card */
+.verbal-card {
+  margin-top: 14px;
+  border: 1.5px solid var(--teal-mid);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.verbal-header {
+  background: var(--teal);
+  color: white;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.verbal-en {
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink);
+  font-style: italic;
+  border-bottom: 1px solid var(--border);
+  background: var(--teal-lt);
+}
+
+.verbal-zh {
+  padding: 12px 16px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-mid);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">Rx</div>
+  <div>
+    <div class="header-title">藥師 SOAP 導師</div>
+    <div class="header-sub">DRP 臨床推理訓練・藥學系實習生</div>
+  </div>
+  <div class="header-right">
+    <span class="pill pill-teal" id="pillLevel">入門案例</span>
+    <span class="pill pill-amber" id="pillCase">案例 1 / 3</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-label">練習案例</div>
+      <button class="case-btn active" onclick="selectCase(0)" id="cb0">
+        <div class="case-name">林阿明・68歲男</div>
+        <div class="case-desc"><span class="diff-tag diff-1">入門</span>高血壓・單一 DRP</div>
+      </button>
+      <button class="case-btn" onclick="selectCase(1)" id="cb1">
+        <div class="case-name">陳美惠・54歲女</div>
+        <div class="case-desc"><span class="diff-tag diff-2">進階</span>糖尿病・腎功能異常</div>
+      </button>
+      <button class="case-btn" onclick="selectCase(2)" id="cb2">
+        <div class="case-name">吳秀蘭・78歲女</div>
+        <div class="case-desc"><span class="diff-tag diff-3">挑戰</span>AF+HFrEF・DOAC劑量</div>
+      </button>
+      <button class="free-case-btn" id="freeCaseBtn" onclick="openFreeCase()">
+        <span>＋</span> 輸入我的案例
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">儲存的案例</div>
+      <div id="savedCasesList" style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11px;color:var(--ink-dim);padding:4px 0">尚無儲存記錄</div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">推理步驟</div>
+      <div class="drp-chain" id="drpChain">
+        <div class="chain-step done">
+          <div class="step-num">✓</div>
+          <div class="step-text">
+            認識病人基本資料
+            <div class="step-sub">年齡、診斷、用藥史</div>
+          </div>
+        </div>
+        <div class="chain-step current" id="step1">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            找出主要 DRP
+            <div class="step-sub">什麼藥物問題最需要藥師介入？</div>
+          </div>
+        </div>
+        <div class="chain-step locked" id="step2">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            收集支持 Assessment 的資料
+            <div class="step-sub">S + O 只留相關的</div>
+          </div>
+        </div>
+        <div class="chain-step locked" id="step3">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            藥師 Assessment
+            <div class="step-sub">Guideline → 目前用藥 → 病人特性</div>
+          </div>
+        </div>
+        <div class="chain-step locked" id="step4">
+          <div class="step-num">5</div>
+          <div class="step-text">
+            具體 Plan
+            <div class="step-sub">藥名・劑量・監測指標</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">目前評分</div>
+      <div class="score-grid">
+        <div class="score-row">
+          <div class="score-letter sl-s">S</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="bar-s" style="width:0%;background:var(--s-color)"></div></div>
+          <div class="score-num" id="num-s">—/5</div>
+        </div>
+        <div class="score-row">
+          <div class="score-letter sl-o">O</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="bar-o" style="width:0%;background:var(--o-color)"></div></div>
+          <div class="score-num" id="num-o">—/10</div>
+        </div>
+        <div class="score-row">
+          <div class="score-letter sl-a">A</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="bar-a" style="width:0%;background:var(--a-color)"></div></div>
+          <div class="score-num" id="num-a">—/25</div>
+        </div>
+        <div class="score-row">
+          <div class="score-letter sl-p">P</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="bar-p" style="width:0%;background:var(--p-color)"></div></div>
+          <div class="score-num" id="num-p">—/10</div>
+        </div>
+        <div class="score-total">
+          <span>Total</span>
+          <span id="num-total">尚未評分</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="input-area">
+      <textarea id="userInput"
+        placeholder="輸入你的想法、SOAP 內容、或任何問題…（Enter 送出，Shift+Enter 換行）"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="送出">↑</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── API Key ────────────────────────────────────────────────
+const PROXY_URL = "https://script.google.com/macros/s/AKfycbwDyBejlq0BpoI3_jcqcQFhYMZkKOpSc5itQKWaCNyX8zU91S-J7Fg5ctdnUUDuTOqA/exec";
+
+// ── Constants ──────────────────────────────────────────────
+const FREE_IDX = 3;
+
+// ── Cases (all clinical content corrected) ─────────────────
+const CASES = [
+  {
+    id: 0, name: "林阿明", age: 68, gender: "男",
+    dx: "原發性高血壓（第2期）", diffLabel: "入門", diffClass: "diff-1",
+    subjective: "頭痛 2 週、偶有頭暈，自述有規律服藥，沒有漏藥",
+    meds: ["Amlodipine 5mg QD（服用 6 個月）"],
+    data: [
+      { key: "BP（今日）",    val: "162/98 mmHg", cls: "abnormal" },
+      { key: "BP（上次門診）", val: "158/94 mmHg", cls: "abnormal" },
+      { key: "HR",            val: "76 bpm",       cls: "normal"   },
+      { key: "SCr",           val: "0.9 mg/dL",    cls: "normal"   },
+      { key: "K+",            val: "4.1 mEq/L",    cls: "normal"   },
+      { key: "eGFR",          val: "78 mL/min",    cls: "normal"   }
+    ],
+    drp:  "Amlodipine 5mg 單藥，病人自述 adherence 良好，但血壓兩次門診仍未達標（ACC/AHA 2017 目標 <130/80 mmHg）。首先需排除 white coat effect 或繼發性高血壓，接著評估是否需要增加 Amlodipine 至 10mg 或加入第二線藥（ACEi/ARB 為優先考量，兼顧腎保護）",
+    hint: "這個案例核心 DRP 是單一的：血壓未達標。引導學生先確認 adherence，再討論藥物調整方向。注意：要問學生『你覺得 Amlodipine 5mg 的最大劑量是多少？』"
+  },
+  {
+    id: 1, name: "陳美惠", age: 54, gender: "女",
+    dx: "第二型糖尿病合併 CKD stage 3a（eGFR 42）", diffLabel: "進階", diffClass: "diff-2",
+    subjective: "疲倦、食慾下降，近 3 個月血糖控制不佳，偶有低血糖發作（冒冷汗、手抖）",
+    meds: ["Metformin 1000mg BID", "Gliclazide 80mg BID"],
+    data: [
+      { key: "eGFR",  val: "42 mL/min",   cls: "abnormal"   },
+      { key: "SCr",   val: "1.4 mg/dL",   cls: "borderline" },
+      { key: "HbA1c", val: "9.2%",         cls: "abnormal"   },
+      { key: "FPG",   val: "214 mg/dL",   cls: "abnormal"   },
+      { key: "K+",    val: "5.2 mEq/L",   cls: "borderline" },
+      { key: "BP",    val: "138/84 mmHg", cls: "borderline" }
+    ],
+    drp:  "主要 DRP 有兩個需分別評估：\n1. Metformin：eGFR 30-45（CKD stage 3a）時 Metformin 可使用但建議劑量不超過 1000mg/day（原先 1000mg BID = 2000mg/day 偏高），eGFR<30 才絕對禁忌，學生常見錯誤是以為 CKD 3a 就不能用。\n2. Gliclazide：Sulfonylurea 類在 CKD 時低血糖風險增加，Gliclazide 在 SU 中相對安全（短效、較少活性代謝物），但仍需監測。病人已有低血糖症狀，需評估是否減量或換藥。",
+    hint: "引導學生先認識 eGFR 對 Metformin 的影響（不是禁忌，是需要調整劑量），再討論 Gliclazide 低血糖風險。台灣臨床上 Gliclazide（Diamicron）比 Glibenclamide 更常用。"
+  },
+  {
+    id: 2, name: "吳秀蘭", age: 78, gender: "女",
+    dx: "心房顫動（AF）合併 HFrEF（EF 38%）、CKD stage 3b", diffLabel: "挑戰", diffClass: "diff-3",
+    subjective: "頭暈、疲倦 1 週，昨日如廁後跌倒一次（無外傷），女兒說最近胃口變差、大便偏黑",
+    meds: ["Apixaban 5mg BID", "Spironolactone 25mg QD", "Furosemide 40mg QD", "Carvedilol 3.125mg BID", "Enalapril 5mg BID"],
+    data: [
+      { key: "BP",   val: "104/62 mmHg",  cls: "borderline" },
+      { key: "HR",   val: "68 bpm",        cls: "normal"     },
+      { key: "SCr",  val: "2.1 mg/dL",    cls: "abnormal"   },
+      { key: "eGFR", val: "28 mL/min",    cls: "abnormal"   },
+      { key: "K+",   val: "5.8 mEq/L",   cls: "abnormal"   },
+      { key: "Hb",   val: "9.2 g/dL",    cls: "abnormal"   },
+      { key: "BW",   val: "46 kg",         cls: "borderline" },
+      { key: "Age/SCr/BW", val: "78歲 / 2.1 / 46kg", cls: "abnormal" }
+    ],
+    drp:  "多重 DRP，引導優先順序：\n\n1. Apixaban 劑量錯誤（最核心 DRP）：\nApixaban AF 劑量減量標準（符合以下 3 項中 2 項即需減量至 2.5mg BID）：\n  ① 年齡 ≥ 80 歲\n  ② 體重 ≤ 60 kg  ← 本案符合（46 kg）\n  ③ SCr ≥ 1.5 mg/dL  ← 本案符合（2.1 mg/dL）\n本案符合 2/3 項（BW + SCr），應使用 Apixaban 2.5mg BID，目前 5mg BID 為過量，增加出血風險。\n大便偏黑 + Hb 9.2 可能是 GI 出血早期表現，與 Apixaban 過量直接相關。\n\n2. 高血鉀風險（第二 DRP）：\neGFR 28（CKD stage 3b–4 邊界）合併使用 Spironolactone + Enalapril，兩者均會升高 K+，目前 K+ 5.8 mEq/L 已達危險範圍（>5.5），需立即評估是否停用 Spironolactone 或調整 Enalapril。\n\n3. Enalapril 在 CKD eGFR<30 的安全性：\neGFR 28 屬 CKD stage 3b–4 邊界，ACEi 在此階段需謹慎，需監測腎功能與 K+。\n\n引導順序：先引導學生看 Apixaban 的劑量調整標準（三個條件）→ 讓學生自己對照本案 → 再討論大便偏黑的臨床意義 → 最後討論高血鉀。",
+    hint: "核心教學點：Apixaban 劑量調整的三個條件（年齡/體重/SCr）是大五實習生最常不知道的。引導方式：先問『你知道 Apixaban 什麼情況要減量嗎？』讓學生嘗試回答，不管對不對都先肯定再補充。高血鉀是第二個重點，Spiro + ACEi + CKD 的組合在臨床很常見。"
+  }
+];
+
+// ── Per-case state ──────────────────────────────────────────
+let currentCase = 0;
+let busy        = false;
+
+const caseState = [0,1,2].map(() => ({
+  history: [], scores: { s:null, o:null, a:null, p:null },
+  step: 1, domNode: null, initialized: false
+}));
+
+const freeState = {
+  history: [], scores: { s:null, o:null, a:null, p:null },
+  step: 1, domNode: null, initialized: false, data: null
+};
+
+function cs() {
+  return currentCase === FREE_IDX ? freeState : caseState[currentCase];
+}
+
+// ── System prompt (all teaching logic improved) ─────────────
+function buildSystem(c) {
+  const medsStr = Array.isArray(c.meds) ? c.meds.join("、") : c.meds;
+  const dataStr = c.data.map(d => "  " + d.key + ": " + d.val).join("\n");
+  return "你是一位資深臨床藥師，同時也是藥學系大五實習生的教學指導藥師。\n\n" +
+"【教學對象】藥學系大五實習生：\n" +
+"- 剛開始接觸臨床，藥學概念仍在建立中\n" +
+"- 知道 SOAP 格式，但不清楚「藥師視角」\n" +
+"- 容易把 SOAP 寫成疾病摘要，而不是藥物問題分析\n" +
+"- 需要鼓勵與引導，對犯錯有焦慮\n\n" +
+"【核心教學任務】\n" +
+"訓練學生建立「以 Drug-Related Problem（DRP）為核心」的藥師 SOAP 思維。\n" +
+"每份 SOAP 只聚焦一個最重要的 DRP，重點是臨床推理，不是整理病歷。\n\n" +
+"【教學語氣與方式】\n" +
+"- 像病房中帶學生的 preceptor：溫和、清楚、有方向感\n" +
+"- 一次只問一個問題，確認學生理解後再推進下一步\n" +
+"- 先肯定學生做對的部分，再引導不足之處\n" +
+"- 不要直接給答案，用提問引導思考\n" +
+"- 術語先用白話解釋，括號補上專業術語\n" +
+"- 如果學生完全卡住（連續兩次無法回答），給一個小提示，但仍不給完整答案\n\n" +
+"【對話節奏管理】\n" +
+"- 若學生連續 3 輪以上沒有朝 SOAP 方向推進（只在閒聊或重複同樣說法），請溫和推進：「我們試著把剛才的想法整理成 S 的部分，你會怎麼寫？」\n" +
+"- 若學生直接問「正確答案是什麼？」：回答「我先不直接給答案，不然就少了一次練習的機會。你目前覺得最可能的 DRP 是什麼？」\n" +
+"- 若學生只寫了部分 SOAP 就要求評分：提醒「目前看到你寫了 S 和 O，還差 A 和 P，要不要先把 Assessment 補上？Assessment 是藥師 SOAP 最重要的部分。」\n\n" +
+"【當學生只描述疾病時】\n" +
+"若學生只說疾病名稱（如：高血壓、糖尿病、心衰竭），請回應：\n" +
+"「這是醫療診斷（medical diagnosis）。身為藥師，我們要再往前問一步：這個病人目前用的藥，有沒有什麼問題？比如說，劑量夠嗎？有沒有安全疑慮？」\n\n" +
+"【SOAP 各部分引導重點】\n\n" +
+"S（主觀資料）：\n" +
+"- 只保留與 DRP 直接相關的資訊：症狀、主訴、服藥狀況（adherence）\n" +
+"- 提醒：不要貼完整病史，問學生「這個症狀跟你找到的藥物問題有關係嗎？」\n" +
+"- adherence 是 S 最重要的藥師資訊，若學生遺漏要特別引導\n\n" +
+"O（客觀資料）：\n" +
+"- 只整理能直接支持 Assessment 的數據\n" +
+"- 提醒：不要貼全部 lab，問學生「這個數值正常嗎？對你找到的藥物問題有什麼影響？」\n" +
+"- 生命徵象、腎功能、藥物濃度、相關 lab 是重點\n\n" +
+"A（Assessment）— 最重要，分三層引導，一次只問一層：\n" +
+"  層1 Guideline/治療目標：「這個病人的治療目標是什麼？目前有達到嗎？」\n" +
+"  層2 目前用藥評估：「目前的藥、劑量、頻次是否恰當？有沒有禁忌症、毒性風險、藥物交互作用？」\n" +
+"  層3 病人特殊性：「這個病人的腎功能、年齡、或其他因素，對這個藥有影響嗎？」\n" +
+"- Assessment 最後要明確說出：「真正的 DRP 是什麼」\n" +
+"- 提醒學生：Assessment 不是描述病情，是藥物評估與推理\n\n" +
+"P（Plan）：\n" +
+"- Plan 要直接對應 Assessment 的 DRP\n" +
+"- 必須具體：藥名、劑量、途徑、頻次、monitoring 指標、追蹤時間\n" +
+"- 問學生：「你要 monitor 什麼？多久追蹤一次？」\n\n" +
+"【評分時機】\n" +
+"只有在學生完整寫出 S、O、A、P 四個部分後，才進行評分。\n" +
+"若學生只寫了部分，請提醒他補完再評分。\n\n" +
+"【評分格式】完整 SOAP 提交後使用以下格式：\n" +
+"【藥師 SOAP 評分】\n" +
+"S：x/5　O：x/10　A：x/25　P：x/10　Total：x/50\n" +
+"【做得好的地方】\n" +
+"【主要 DRP 問題】\n" +
+"【缺少的重要資料】\n" +
+"【臨床推理回饋】\n" +
+"【核心 DRP 是什麼】\n" +
+"【臨床教學重點】\n" +
+"【下一步修改任務】\n\n" +
+"【Verbal Summary】評分之後，輸出以下區塊：\n\n" +
+"【藥師口頭摘要 Verbal Summary】\n" +
+"（說明：這是真實藥師在查房或與醫師溝通時的口語英文，簡潔、直接，2–4 句）\n\n" +
+"\"[英文口頭摘要：病人基本資料 + 核心 DRP + 建議 + 監測指標]\"\n\n" +
+"（中文說明：解釋這段英文的結構與重點，幫助學生理解怎麼說）\n\n" +
+"注意：英文要自然口語，不是照念病歷，重點是 DRP + 建議 + monitoring，2–4 句。\n\n" +
+"【目前練習案例】\n" +
+"病人：" + c.name + "，" + c.age + "歲" + c.gender + "\n" +
+"診斷：" + c.dx + "\n" +
+"主觀資料：" + c.subjective + "\n" +
+"目前用藥：" + medsStr + "\n" +
+"客觀數據：\n" + dataStr + "\n\n" +
+"（以下是給你的教學參考，絕對不要直接告訴學生答案）\n" +
+"核心 DRP 與教學說明：" + c.drp + "\n" +
+"引導提示：" + c.hint + "\n\n" +
+"請像真實病房中的 preceptor 一樣互動：簡潔、自然、有臨床感，一次只推進一步思考。";
+}
+
+// ── Reasoning chain ─────────────────────────────────────────
+// Step detection: only trigger on STUDENT message, not AI reply
+// Each signal is more specific to avoid false triggers
+const STEP_SIGNALS = [
+  null,
+  // Step 1→2: student identifies a drug problem (not just disease name)
+  /DRP|藥物問題|drug.?related|劑量不夠|劑量過高|劑量偏高|禁忌|毒性|未達標|沒有達標|血壓沒控制好|濃度過高|低血鉀|腎功能影響.*藥|藥.*腎功能/i,
+  // Step 2→3: student writes actual S or O content (must start with S: or O:)
+  /^[Ss][：:：\s]|^[Oo][：:：\s]|^Subjective|^Objective/m,
+  // Step 3→4: student writes actual A content (must start with A:)
+  /^[Aa][：:：\s]|^Assessment/m,
+  // Step 4→5: student writes actual P content (must start with P:)
+  /^[Pp][：:：\s]|^Plan/m
+];
+
+function detectStepAdvance(userMsg) {
+  // Only scan the STUDENT message, not the AI reply
+  var st = cs();
+  if (st.step >= 4) return;
+  var next = st.step + 1;
+  if (!STEP_SIGNALS[next]) return;
+  if (STEP_SIGNALS[next].test(userMsg)) {
+    st.step = next;
+    renderChain();
+  }
+}
+
+function renderChain() {
+  var step = cs().step;
+  var labels = [
+    { text: "認識病人基本資料",            sub: "年齡、診斷、用藥史" },
+    { text: "找出主要 DRP",                sub: "什麼藥物問題最需要藥師介入？" },
+    { text: "收集支持 Assessment 的資料",  sub: "S + O 只留相關的" },
+    { text: "藥師 Assessment",              sub: "Guideline → 目前用藥 → 病人特性" },
+    { text: "具體 Plan",                    sub: "藥名・劑量・監測指標" }
+  ];
+  document.querySelectorAll(".chain-step").forEach(function(el, i) {
+    var numEl  = el.querySelector(".step-num");
+    var textEl = el.querySelector(".step-text");
+    textEl.innerHTML = labels[i].text + '<div class="step-sub">' + labels[i].sub + '</div>';
+    if (i < step) {
+      el.className = "chain-step done";    numEl.textContent = "✓";
+    } else if (i === step) {
+      el.className = "chain-step current"; numEl.textContent = String(i+1);
+    } else {
+      el.className = "chain-step locked";  numEl.textContent = String(i+1);
+    }
+  });
+}
+
+// ── Score bars ──────────────────────────────────────────────
+function updateScoreBars() {
+  var sc    = cs().scores;
+  var maxes = { s:5, o:10, a:25, p:10 };
+  Object.keys(maxes).forEach(function(k) {
+    var v = sc[k];
+    document.getElementById("bar-"+k).style.width = (v !== null ? (v/maxes[k]*100) : 0) + "%";
+    document.getElementById("num-"+k).textContent  = v !== null ? v+"/"+maxes[k] : "—/"+maxes[k];
+  });
+  var s=sc.s, o=sc.o, a=sc.a, p=sc.p;
+  document.getElementById("num-total").textContent =
+    (s!==null && o!==null && a!==null && p!==null) ? (s+o+a+p)+" / 50" : "尚未評分";
+}
+
+// ── API call ────────────────────────────────────────────────
+async function callClaude(userMsg) {
+  var st = cs();
+  var caseObj;
+  if (currentCase === FREE_IDX) {
+    var fd = freeState.data;
+    caseObj = {
+      name: fd.name, age: fd.age, gender: fd.gender, dx: fd.dx,
+      subjective: fd.cc || "未提供",
+      meds: fd.meds.split("\n").map(function(s){ return s.trim(); }).filter(Boolean),
+      data: fd.labs.map(function(l){ var p=l.split(": "); return {key:p[0], val:p[1]||"", cls:""}; }),
+      drp:  "（由學生自行探索）",
+      hint: "這是學生自己帶來的案例，請引導他們從現有數據找出最重要的 DRP，不要預設答案。"
+    };
+  } else {
+    caseObj = CASES[currentCase];
+  }
+
+  var system = buildSystem(caseObj);
+  if (currentCase === FREE_IDX && freeState.data.note)
+    system += "\n其他補充資訊：" + freeState.data.note;
+
+  st.history.push({ role: "user", content: userMsg });
+
+  var nvidiaMessages = [{ role: "system", content: system }].concat(st.history);
+
+  var res = await fetch(PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: nvidiaMessages })
+  });
+  if (!res.ok) { var t = await res.text(); throw new Error("Proxy "+res.status+": "+t); }
+  var data  = await res.json();
+  var reply = data.reply || "系統發生錯誤，請再試一次。";
+  st.history.push({ role: "assistant", content: reply });
+
+  // Parse scores
+  var sm = reply.match(/S[\uff1a:\s]+(\d+)\s*\/\s*5[\s\S]*?O[\uff1a:\s]+(\d+)\s*\/\s*10[\s\S]*?A[\uff1a:\s]+(\d+)\s*\/\s*25[\s\S]*?P[\uff1a:\s]+(\d+)\s*\/\s*10/i);
+  if (sm) {
+    st.scores = { s:+sm[1], o:+sm[2], a:+sm[3], p:+sm[4] };
+    updateScoreBars();
+    if (st.step < 4) { st.step = 4; renderChain(); }
+  }
+
+  // Step advance: only based on student message
+  detectStepAdvance(userMsg);
+  return reply;
+}
+
+// ── Render helpers ──────────────────────────────────────────
+function renderCaseCard(c) {
+  var div = document.createElement("div");
+  div.className = "case-card";
+  var dataHTML = c.data.map(function(d) {
+    return '<div class="data-item"><div class="data-key">'+d.key+'</div><div class="data-val '+d.cls+'">'+d.val+'</div></div>';
+  }).join("");
+  var medsStr = Array.isArray(c.meds) ? c.meds.join("、") : c.meds;
+  div.innerHTML =
+    '<div class="case-card-header">' +
+      '<div class="patient-icon">🏥</div>' +
+      '<div><div class="patient-name">'+c.name+'・'+c.age+'歲'+c.gender+'</div>' +
+      '<div class="patient-meta">'+c.dx+'&nbsp;<span class="diff-tag '+c.diffClass+'">'+c.diffLabel+'</span></div></div>' +
+    '</div>' +
+    '<div style="margin-bottom:10px;font-size:12px;color:var(--ink-mid)"><b>主訴：</b>'+c.subjective+'<br><b>用藥：</b>'+medsStr+'</div>' +
+    '<div class="data-grid">'+dataHTML+'</div>';
+  return div;
+}
+
+function renderFreeCaseCard(d) {
+  var div = document.createElement("div");
+  div.className = "case-card";
+  var medList  = d.meds.split("\n").filter(Boolean).join("、");
+  var labsHTML = d.labs.map(function(l) {
+    var p = l.split(": ");
+    return '<div class="data-item"><div class="data-key">'+p[0]+'</div><div class="data-val">'+(p[1]||"")+'</div></div>';
+  }).join("");
+  div.innerHTML =
+    '<div class="case-card-header">' +
+      '<div class="patient-icon">📋</div>' +
+      '<div><div class="patient-name">'+d.name+'・'+d.age+'歲'+d.gender+'</div>' +
+      '<div class="patient-meta">'+d.dx+'&nbsp;<span class="diff-tag diff-1">自輸案例</span></div></div>' +
+    '</div>' +
+    '<div style="margin-bottom:10px;font-size:12px;color:var(--ink-mid)">' +
+      (d.cc ? '<b>主訴：</b>'+d.cc+'<br>' : '') +
+      '<b>用藥：</b>'+medList+'</div>' +
+    (d.labs.length ? '<div class="data-grid">'+labsHTML+'</div>' : '') +
+    (d.note ? '<div style="font-size:11px;color:var(--ink-dim);margin-top:8px">'+d.note+'</div>' : '');
+  return div;
+}
+
+function extractVerbalSummary(text) {
+  // Match both Chinese and English variants of the header
+  var blockMatch = text.match(/【藥師口頭摘要[^】]*】([\s\S]*?)(?=【|$)/);
+  if (!blockMatch) return null;
+  var block   = blockMatch[1].trim();
+  var enMatch = block.match(/"([^"]+)"/);
+  var enText  = enMatch ? enMatch[1].trim() : null;
+  var zhText  = block
+    .replace(/"[^"]*"/g, "")
+    .replace(/（[^）]*說明[^）]*）?/g, "")
+    .replace(/（說明[^）]*）?/g, "")
+    .split("\n").map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; }).join("\n");
+  if (!enText) return null;
+  return { en: enText, zh: zhText };
+}
+
+function renderVerbalCard(en, zh) {
+  var card = document.createElement("div");
+  card.className = "verbal-card";
+  card.innerHTML =
+    '<div class="verbal-header"><span>🗣</span> 藥師口頭摘要 Verbal Summary</div>' +
+    '<div class="verbal-en">"'+en+'"</div>' +
+    (zh ? '<div class="verbal-zh">'+zh.replace(/\n/g,"<br>")+'</div>' : "");
+  return card;
+}
+
+function renderBotMsg(text) {
+  var wrap = document.createElement("div");
+  wrap.className = "msg bot";
+  var av = document.createElement("div");
+  av.className = "msg-avatar bot-av"; av.textContent = "Rx";
+  var bub = document.createElement("div");
+  bub.className = "bubble";
+
+  var mainText = text.replace(/【藥師口頭摘要[^】]*】[\s\S]*$/, "").trim();
+  var html = mainText
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/【(.*?)】/g, '<b style="color:var(--teal)">【$1】</b>')
+    .replace(/\[S\]/g, '<span class="soap-tag tag-s">S</span>')
+    .replace(/\[O\]/g, '<span class="soap-tag tag-o">O</span>')
+    .replace(/\[A\]/g, '<span class="soap-tag tag-a">A</span>')
+    .replace(/\[P\]/g, '<span class="soap-tag tag-p">P</span>')
+    .replace(/✓([^\n]*)/g, '<span class="fb-item fb-good">$1</span>')
+    .replace(/△([^\n]*)/g, '<span class="fb-item fb-warn">$1</span>')
+    .replace(/✗([^\n]*)/g, '<span class="fb-item fb-bad">$1</span>')
+    .replace(/→([^\n]*)/g, '<span class="fb-item fb-q">$1</span>')
+    .replace(/\n/g, "<br>");
+  bub.innerHTML = html;
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+
+  var verbal = extractVerbalSummary(text);
+  if (verbal) wrap.appendChild(renderVerbalCard(verbal.en, verbal.zh));
+  return wrap;
+}
+
+function renderUserMsg(text) {
+  var wrap = document.createElement("div");
+  wrap.className = "msg user";
+  var av = document.createElement("div");
+  av.className = "msg-avatar user-av"; av.textContent = "👨‍⚕️";
+  var bub = document.createElement("div");
+  bub.className = "bubble"; bub.textContent = text;
+  wrap.appendChild(av); wrap.appendChild(bub);
+  return wrap;
+}
+
+function renderThinking() {
+  var wrap = document.createElement("div");
+  wrap.className = "thinking-wrap"; wrap.id = "thinking";
+  var av = document.createElement("div");
+  av.className = "msg-avatar bot-av"; av.textContent = "Rx";
+  var bub = document.createElement("div");
+  bub.className = "thinking-bubble";
+  bub.innerHTML = '<div class="dot-row"><span></span><span></span><span></span></div> 導師思考中…';
+  wrap.appendChild(av); wrap.appendChild(bub);
+  return wrap;
+}
+
+function addQuickOptions(targetEl, opts) {
+  var div = document.createElement("div");
+  div.className = "quick-opts";
+  opts.forEach(function(o) {
+    var btn = document.createElement("button");
+    btn.className = "qopt"; btn.textContent = o;
+    btn.onclick = function() {
+      div.remove();
+      document.getElementById("userInput").value = o;
+      sendMessage();
+    };
+    div.appendChild(btn);
+  });
+  targetEl.querySelector(".bubble").appendChild(div);
+}
+
+function scrollBottom() {
+  var m = cs().domNode;
+  if (m) m.scrollTop = m.scrollHeight;
+}
+
+// ── Send ────────────────────────────────────────────────────
+async function sendMessage() {
+  if (busy) return;
+  var inp  = document.getElementById("userInput");
+  var text = inp.value.trim();
+  if (!text) return;
+  busy = true;
+  document.getElementById("sendBtn").disabled = true;
+  inp.value = ""; inp.style.height = "42px";
+
+  var msgs = cs().domNode;
+  msgs.appendChild(renderUserMsg(text));
+  var thinking = renderThinking();
+  msgs.appendChild(thinking);
+  scrollBottom();
+
+  try {
+    var reply = await callClaude(text);
+    thinking.remove();
+    msgs.appendChild(renderBotMsg(reply));
+  } catch(e) {
+    thinking.remove();
+    msgs.appendChild(renderBotMsg("⚠ 連線錯誤：" + e.message));
+  }
+  scrollBottom();
+  if (currentCase === FREE_IDX && freeState.data) snapshotFreeState();
+  busy = false;
+  document.getElementById("sendBtn").disabled = false;
+  inp.focus();
+}
+
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = "42px";
+  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+}
+
+// ── Opening messages & quick options per case ───────────────
+function getOpenMsg(idx) {
+  var msgs = [
+    "好，我們來看林阿明的案例。\n\n先看一下病人資料，他用 Amlodipine 5mg 已經 6 個月了，BP 今天量是 162/98。\n\n第一個問題：你覺得這個數值有沒有問題？",
+    "好，陳美惠的案例。\n\n先看一下她的數據，有幾個數值標紅了。\n\n第一個問題：你有沒有注意到 eGFR 42 這個數字？這個值對藥物選擇有什麼意義？",
+    "好，吳秀蘭的案例，這個比較複雜。\n\n先看一下病人資料：78 歲、46 kg、eGFR 28，目前用 Apixaban 5mg BID。\n\n第一個問題：你知道 Apixaban 在什麼情況下需要減量嗎？"
+  ];
+  return msgs[idx];
+}
+
+function getQuickOpts(idx) {
+  var opts = [
+    [
+      "BP 162/98 偏高，目標應該要 <130/80",
+      "病人說有規律服藥，但血壓還是控制不好",
+      "Amlodipine 5mg 是不是劑量不夠？",
+      "我不確定，可以給我提示嗎？"
+    ],
+    [
+      "eGFR 42 表示腎功能不好，可能影響藥物使用",
+      "Metformin 在腎功能不好時好像不能用？",
+      "病人有低血糖症狀，跟 Gliclazide 有關係嗎？",
+      "我不確定從哪裡開始，可以給提示嗎？"
+    ],
+    [
+      "Apixaban 好像有體重或腎功能的劑量調整標準？",
+      "eGFR 28 很低，這對目前的藥有影響嗎？",
+      "K+ 5.8 偏高，跟 Spironolactone 和 Enalapril 有關係嗎？",
+      "大便偏黑加上 Hb 低，是不是出血？跟藥物有關嗎？"
+    ]
+  ];
+  return opts[idx];
+}
+
+// ── Select built-in case ────────────────────────────────────
+function selectCase(idx) {
+  // Auto-save free case before leaving
+  if (currentCase === FREE_IDX && freeState.data && freeState.history.length > 0) {
+    snapshotFreeState();
+  }
+
+  var prevSt = cs();
+  if (prevSt.domNode) prevSt.domNode.style.display = "none";
+
+  currentCase = idx;
+  var st = cs();
+  var c  = CASES[idx];
+
+  document.getElementById("pillLevel").textContent = c.diffLabel + "案例";
+  document.getElementById("pillCase").textContent  = "案例 " + (idx+1) + " / 3";
+  [0,1,2].forEach(function(i) {
+    document.getElementById("cb"+i).classList.toggle("active", i===idx);
+  });
+  document.getElementById("freeCaseBtn").classList.remove("active");
+
+  updateScoreBars();
+  renderChain();
+
+  var chatArea  = document.querySelector(".chat-area");
+  var inputArea = document.querySelector(".input-area");
+
+  if (!st.initialized) {
+    st.initialized = true;
+    var msgsDiv = document.createElement("div");
+    msgsDiv.className = "messages";
+    st.domNode = msgsDiv;
+    chatArea.insertBefore(msgsDiv, inputArea);
+    msgsDiv.appendChild(renderCaseCard(c));
+
+    var openMsg   = getOpenMsg(idx);
+    var welcomeEl = renderBotMsg(openMsg);
+    msgsDiv.appendChild(welcomeEl);
+    st.history.push({ role: "assistant", content: openMsg });
+    addQuickOptions(welcomeEl, getQuickOpts(idx));
+  }
+
+  st.domNode.style.display = "flex";
+  scrollBottom();
+}
+
+// ── localStorage save/restore ───────────────────────────────
+var STORAGE_KEY = "soap_tutor_free_cases";
+
+function loadSavedCases() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch(e) { return []; }
+}
+
+function saveCaseToStorage(entry) {
+  var list = loadSavedCases();
+  var idx  = list.findIndex(function(x){ return x.id === entry.id; });
+  if (idx >= 0) list[idx] = entry; else list.unshift(entry);
+  if (list.length > 10) list = list.slice(0, 10);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+function deleteSavedCase(id) {
+  var list = loadSavedCases().filter(function(x){ return x.id !== id; });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+function snapshotFreeState() {
+  if (!freeState.data) return;
+  var id = freeState.data.id || ("fc_" + Date.now());
+  freeState.data.id = id;
+  saveCaseToStorage({
+    id: id,
+    savedAt: new Date().toLocaleString("zh-TW"),
+    data:    freeState.data,
+    history: freeState.history,
+    scores:  freeState.scores,
+    step:    freeState.step
+  });
+  renderSavedCasesList();
+}
+
+function renderSavedCasesList() {
+  var list      = loadSavedCases();
+  var container = document.getElementById("savedCasesList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (list.length === 0) {
+    var empty = document.createElement("div");
+    empty.style.cssText = "font-size:11px;color:var(--ink-dim);padding:4px 2px";
+    empty.textContent = "尚無儲存記錄（使用自輸案例後自動儲存）";
+    container.appendChild(empty);
+    return;
+  }
+
+  list.forEach(function(entry) {
+    var total    = (entry.scores.s||0)+(entry.scores.o||0)+(entry.scores.a||0)+(entry.scores.p||0);
+    var hasScore = entry.scores.s !== null;
+    var row      = document.createElement("div");
+    row.className = "saved-case-row";
+
+    var info = document.createElement("div");
+    info.className = "saved-case-info";
+    info.onclick = (function(id){ return function(){ restoreSavedCase(id); }; })(entry.id);
+
+    var nameEl = document.createElement("div");
+    nameEl.className = "saved-case-name";
+    nameEl.textContent = entry.data.name + "・" + entry.data.age + "歲" + entry.data.gender;
+
+    var metaEl = document.createElement("div");
+    metaEl.className = "saved-case-meta";
+    metaEl.textContent = entry.data.dx.slice(0, 16);
+    if (hasScore) {
+      var scoreSpan = document.createElement("span");
+      scoreSpan.className = "saved-score";
+      scoreSpan.textContent = total + "/50";
+      metaEl.appendChild(scoreSpan);
+    }
+
+    var dateEl = document.createElement("div");
+    dateEl.className = "saved-case-date";
+    dateEl.textContent = entry.savedAt;
+
+    info.appendChild(nameEl); info.appendChild(metaEl); info.appendChild(dateEl);
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "saved-del-btn";
+    delBtn.title     = "刪除";
+    delBtn.textContent = "✕";
+    delBtn.onclick = (function(id){ return function(e){ e.stopPropagation(); confirmDeleteSaved(id); }; })(entry.id);
+
+    row.appendChild(info); row.appendChild(delBtn);
+    container.appendChild(row);
+  });
+}
+
+function restoreSavedCase(id) {
+  var list  = loadSavedCases();
+  var entry = list.find(function(x){ return x.id === id; });
+  if (!entry) return;
+
+  var prevSt = cs();
+  if (prevSt.domNode) prevSt.domNode.style.display = "none";
+
+  freeState.data    = entry.data;
+  freeState.history = entry.history;
+  freeState.scores  = entry.scores;
+  freeState.step    = entry.step;
+  freeState.initialized = false;
+  if (freeState.domNode) { freeState.domNode.remove(); freeState.domNode = null; }
+
+  currentCase = FREE_IDX;
+  [0,1,2].forEach(function(i){ document.getElementById("cb"+i).classList.remove("active"); });
+  document.getElementById("freeCaseBtn").classList.add("active");
+  document.getElementById("pillLevel").textContent = "自輸案例";
+  document.getElementById("pillCase").textContent  = (entry.data.dx||"自輸").slice(0,10);
+
+  updateScoreBars();
+  freeState.step = entry.step; renderChain();
+
+  var chatArea  = document.querySelector(".chat-area");
+  var inputArea = document.querySelector(".input-area");
+  var msgsDiv   = document.createElement("div");
+  msgsDiv.className = "messages";
+  freeState.domNode = msgsDiv;
+  freeState.initialized = true;
+  chatArea.insertBefore(msgsDiv, inputArea);
+  msgsDiv.appendChild(renderFreeCaseCard(freeState.data));
+
+  entry.history.forEach(function(msg) {
+    if (msg.role === "assistant") msgsDiv.appendChild(renderBotMsg(msg.content));
+    else msgsDiv.appendChild(renderUserMsg(msg.content));
+  });
+
+  msgsDiv.style.display = "flex";
+  scrollBottom();
+}
+
+function confirmDeleteSaved(id) {
+  if (confirm("確定刪除這筆儲存記錄？")) {
+    deleteSavedCase(id);
+    renderSavedCasesList();
+  }
+}
+
+// ── Free Case modal ─────────────────────────────────────────
+function openFreeCase() { document.getElementById("modalOverlay").classList.add("open"); }
+function closeModal()   { document.getElementById("modalOverlay").classList.remove("open"); }
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("modalOverlay")) closeModal();
+}
+
+function buildFreeCaseOpenMsg(d) {
+  // Generate a personalised opening based on what the student filled in
+  var abnormalLabs = d.labs.filter(function(l) {
+    var v = l.split(": ")[1] || "";
+    // simple heuristic: flag if lab name suggests concern
+    return /Digoxin|INR|eGFR|K\+|SCr|HbA1c|WBC/i.test(l);
+  });
+  var labHint = abnormalLabs.length > 0
+    ? "\n\n我注意到你有填 " + abnormalLabs.map(function(l){ return l.split(": ")[0]; }).join("、") + " 等數值，這些等一下在 O 的部分會很重要。"
+    : "";
+  return "好，我看到你的案例了。\n\n先不急著寫 SOAP，看完這份資料，你覺得這個病人的用藥有沒有什麼問題？說說你的第一個直覺。" + labHint;
+}
+
+function submitFreeCase() {
+  var name   = document.getElementById("fc_name").value.trim()   || "學生案例";
+  var age    = document.getElementById("fc_age").value.trim()    || "?";
+  var gender = document.getElementById("fc_gender").value;
+  var dx     = document.getElementById("fc_dx").value.trim()     || "未指定";
+  var meds   = document.getElementById("fc_meds").value.trim();
+  var cc     = document.getElementById("fc_cc").value.trim();
+  var note   = document.getElementById("fc_note").value.trim();
+  if (!meds) { alert("請至少填入目前用藥。"); return; }
+
+  var labDefs = [
+    ["lab_bp","BP","mmHg"],["lab_hr","HR","bpm"],["lab_scr","SCr","mg/dL"],
+    ["lab_egfr","eGFR","mL/min"],["lab_k","K+","mEq/L"],["lab_na","Na+","mEq/L"],
+    ["lab_hba1c","HbA1c","%"],["lab_fpg","FPG","mg/dL"],
+    ["lab_wbc","WBC","K/uL"],["lab_hb","Hb","g/dL"],["lab_inr","INR",""],["lab_alt","ALT","U/L"]
+  ];
+  var labs = labDefs.map(function(def) {
+    var v = document.getElementById(def[0]).value.trim();
+    return v ? def[1] + ": " + v + (def[2] ? " "+def[2] : "") : null;
+  }).filter(Boolean);
+
+  freeState.history     = [];
+  freeState.scores      = { s:null, o:null, a:null, p:null };
+  freeState.step        = 1;
+  freeState.initialized = false;
+  if (freeState.domNode) { freeState.domNode.remove(); freeState.domNode = null; }
+  freeState.data = { name:name, age:age, gender:gender, dx:dx, meds:meds, cc:cc, note:note, labs:labs };
+
+  closeModal();
+
+  if (currentCase === FREE_IDX && freeState.domNode)
+    freeState.domNode.style.display = "none";
+  else {
+    var prevSt = cs();
+    if (prevSt.domNode) prevSt.domNode.style.display = "none";
+  }
+
+  currentCase = FREE_IDX;
+  [0,1,2].forEach(function(i){ document.getElementById("cb"+i).classList.remove("active"); });
+  document.getElementById("freeCaseBtn").classList.add("active");
+  document.getElementById("pillLevel").textContent = "自輸案例";
+  document.getElementById("pillCase").textContent  = dx.slice(0,10) || "自輸";
+
+  updateScoreBars();
+  freeState.step = 1; renderChain();
+
+  var chatArea  = document.querySelector(".chat-area");
+  var inputArea = document.querySelector(".input-area");
+  var msgsDiv   = document.createElement("div");
+  msgsDiv.className = "messages";
+  freeState.domNode = msgsDiv;
+  freeState.initialized = true;
+  chatArea.insertBefore(msgsDiv, inputArea);
+  msgsDiv.appendChild(renderFreeCaseCard(freeState.data));
+
+  var openMsg = buildFreeCaseOpenMsg(freeState.data);
+  msgsDiv.appendChild(renderBotMsg(openMsg));
+  freeState.history.push({ role: "assistant", content: openMsg });
+  msgsDiv.style.display = "flex";
+  scrollBottom();
+}
+
+// ── Init ────────────────────────────────────────────────────
+renderSavedCasesList();
+selectCase(0);
+
+</script>
+<!-- Free Case Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">輸入我的案例</div>
+        <div class="modal-sub">填入手邊的病人資料，開始 DRP 分析練習</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">病人姓名／代號</label>
+          <input class="form-input" id="fc_name" placeholder="例：王先生 或 Case A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">年齡</label>
+          <input class="form-input" id="fc_age" placeholder="例：65" type="number">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">性別</label>
+          <select class="form-select" id="fc_gender">
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">主要診斷</label>
+          <input class="form-input" id="fc_dx" placeholder="例：第二型糖尿病">
+        </div>
+      </div>
+
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="form-label">目前用藥（每行一個）</label>
+          <textarea class="form-textarea" id="fc_meds" placeholder="例：&#10;Metformin 500mg BID&#10;Amlodipine 5mg QD"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="form-label">主訴 / 症狀</label>
+          <textarea class="form-textarea" id="fc_cc" placeholder="例：頭暈、下肢水腫 3 天，自述有規律服藥" style="min-height:52px"></textarea>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label" style="margin-bottom:8px">重要數值（填你有的就好）</div>
+        <div class="lab-grid">
+          <div class="lab-row"><span class="lab-name">BP</span><input class="lab-val" id="lab_bp" placeholder="mmHg"></div>
+          <div class="lab-row"><span class="lab-name">HR</span><input class="lab-val" id="lab_hr" placeholder="bpm"></div>
+          <div class="lab-row"><span class="lab-name">SCr</span><input class="lab-val" id="lab_scr" placeholder="mg/dL"></div>
+          <div class="lab-row"><span class="lab-name">eGFR</span><input class="lab-val" id="lab_egfr" placeholder="mL/min"></div>
+          <div class="lab-row"><span class="lab-name">K⁺</span><input class="lab-val" id="lab_k" placeholder="mEq/L"></div>
+          <div class="lab-row"><span class="lab-name">Na⁺</span><input class="lab-val" id="lab_na" placeholder="mEq/L"></div>
+          <div class="lab-row"><span class="lab-name">HbA1c</span><input class="lab-val" id="lab_hba1c" placeholder="%"></div>
+          <div class="lab-row"><span class="lab-name">FPG</span><input class="lab-val" id="lab_fpg" placeholder="mg/dL"></div>
+          <div class="lab-row"><span class="lab-name">WBC</span><input class="lab-val" id="lab_wbc" placeholder="K/uL"></div>
+          <div class="lab-row"><span class="lab-name">Hb</span><input class="lab-val" id="lab_hb" placeholder="g/dL"></div>
+          <div class="lab-row"><span class="lab-name">INR</span><input class="lab-val" id="lab_inr" placeholder=""></div>
+          <div class="lab-row"><span class="lab-name">ALT</span><input class="lab-val" id="lab_alt" placeholder="U/L"></div>
+        </div>
+      </div>
+
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="form-label">其他補充（過敏、特殊狀況等）</label>
+          <textarea class="form-textarea" id="fc_note" placeholder="例：Penicillin 過敏、正在接受 HD、BMI 38…" style="min-height:52px"></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" id="submitFreeCase" onclick="submitFreeCase()">開始練習 →</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
