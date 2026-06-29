@@ -964,6 +964,8 @@ textarea::placeholder { color: var(--ink-dim); }
         placeholder="輸入你的想法、SOAP 內容、或任何問題…（Enter 送出，Shift+Enter 換行）"
         rows="1"
         onkeydown="handleKey(event)"
+        oncompositionstart="window._imeActive=true"
+        oncompositionend="window._imeActive=false"
         oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="送出">↑</button>
     </div>
@@ -1132,14 +1134,14 @@ function buildSystem(c) {
 // Each signal is more specific to avoid false triggers
 const STEP_SIGNALS = [
   null,
-  // Step 1→2: student identifies a drug problem (not just disease name)
-  /DRP|藥物問題|drug.?related|劑量不夠|劑量過高|劑量偏高|禁忌|毒性|未達標|沒有達標|血壓沒控制好|濃度過高|低血鉀|腎功能影響.*藥|藥.*腎功能/i,
-  // Step 2→3: student writes actual S or O content (must start with S: or O:)
-  /^[Ss][：:：\s]|^[Oo][：:：\s]|^Subjective|^Objective/m,
-  // Step 3→4: student writes actual A content (must start with A:)
-  /^[Aa][：:：\s]|^Assessment/m,
-  // Step 4→5: student writes actual P content (must start with P:)
-  /^[Pp][：:：\s]|^Plan/m
+  // Step 1→2: student identifies any drug-related issue (broad)
+  /DRP|藥物問題|drug.?related|劑量|禁忌|毒性|未達標|沒有達標|血壓.*高|血壓.*控制|濃度|低血鉀|高血鉀|腎功能|eGFR|不夠|過高|過量|太高|太低|需要調整|有問題|不對|不安全|副作用|出血|交互作用/i,
+  // Step 2→3: student writes S or O content (flexible format)
+  /^S[：:\s]|^O[：:\s]|主觀|客觀|主訴|症狀|用藥史|vital|lab|檢驗|血壓|心跳|腎功能|數值/im,
+  // Step 3→4: student writes A content (flexible format)
+  /^A[：:\s]|assessment|評估|判斷|治療目標|第一線|guideline|建議.*因為|原因是|DRP是|問題是.*藥|藥.*問題/im,
+  // Step 4→5: student writes P content (flexible format)
+  /^P[：:\s]|plan|建議|調整|改為|換成|monitor|監測|追蹤|複診|回診|檢查.*後|劑量改/im
 ];
 
 function detectStepAdvance(userMsg) {
@@ -1422,8 +1424,12 @@ async function sendMessage() {
 }
 
 function handleKey(e) {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === "Enter" && !e.shiftKey && !window._imeActive) {
+    e.preventDefault();
+    sendMessage();
+  }
 }
+window._imeActive = false;
 
 function autoResize(el) {
   el.style.height = "42px";
