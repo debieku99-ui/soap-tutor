@@ -803,25 +803,7 @@ textarea::placeholder { color: var(--ink-dim); }
 .msg.bot.full-width { max-width: 100%; align-self: stretch; }
 .msg.bot.full-width .bubble { flex:1; border-radius:var(--radius); }
 .score-full-wrap { display:flex; flex-direction:column; gap:12px; width:100%; }
-.score-numbers {
-  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
-  padding:12px 16px; background:var(--teal); border-radius:var(--radius-sm);
-  color:white; font-family:'JetBrains Mono',monospace; font-size:13px;
-}
-.score-num-item { display:flex; align-items:center; gap:5px; }
-.score-num-label { font-size:11px; opacity:0.8; }
-.score-num-val { font-weight:700; font-size:15px; }
-.score-total-val { margin-left:auto; font-size:18px; font-weight:700; }
-.score-section {
-  padding:12px 16px; border-radius:var(--radius-sm);
-  border:1px solid var(--border); background:var(--surface2);
-}
-.score-section-title {
-  font-size:11px; font-weight:700; text-transform:uppercase;
-  letter-spacing:0.08em; color:var(--ink-dim); margin-bottom:8px;
-}
-.score-body { font-size:13.5px; line-height:1.75; color:var(--ink); }
-.score-body b { font-weight:600; }
+
 
 /* Verbal summary card */
 .verbal-card {
@@ -1132,9 +1114,7 @@ function buildSystem(c) {
 "【主要 DRP 問題】\n" +
 "【缺少的重要資料】\n" +
 "【臨床推理回饋】\n" +
-"【核心 DRP 是什麼】\n" +
-"【臨床教學重點】\n" +
-"【下一步修改任務】\n\n" +
+"【核心 DRP 是什麼】\n\n" +
 "【Verbal Summary】評分之後，輸出以下區塊：\n\n" +
 "【藥師口頭摘要 Verbal Summary】\n" +
 "（說明：這是真實藥師在查房或與醫師溝通時的口語英文，簡潔、直接，2–4 句）\n\n" +
@@ -1352,6 +1332,47 @@ function formatScoreText(text) {
     .replace(/\n/g, "<br>");
 }
 
+function parseScoreSections(text) {
+  // Extract all 【...】 sections into a map
+  var map = {};
+  var parts = text.split(/(【[^】]+】)/);
+  var currentKey = "__intro__";
+  map[currentKey] = "";
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (/^【[^】]+】$/.test(p)) {
+      currentKey = p.replace(/[【】]/g, "").trim();
+      map[currentKey] = "";
+    } else {
+      map[currentKey] = (map[currentKey] || "") + p;
+    }
+  }
+  // Clean up each value
+  Object.keys(map).forEach(function(k) {
+    map[k] = map[k].replace(/^\s+|\s+$/g, "");
+  });
+  return map;
+}
+
+function makeSoapCard(letter, title, color, bg, border, content) {
+  var card = document.createElement("div");
+  card.style.cssText = "border:1.5px solid " + border + ";border-radius:8px;overflow:hidden;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "background:" + color + ";padding:7px 12px;display:flex;align-items:center;gap:8px;";
+  header.innerHTML =
+    "<span style='background:white;color:" + color + ";font-family:JetBrains Mono,monospace;font-weight:700;font-size:11px;padding:2px 6px;border-radius:3px;'>" + letter + "</span>" +
+    "<span style='color:white;font-size:12px;font-weight:600;'>" + title + "</span>";
+
+  var body = document.createElement("div");
+  body.style.cssText = "background:" + bg + ";padding:10px 14px;font-size:13px;line-height:1.7;color:var(--ink);min-height:48px;";
+  body.innerHTML = content ? formatScoreText(content) : "<span style='color:var(--ink-dim)'>—</span>";
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
 function renderScoreMsg(text) {
   var wrap = document.createElement("div");
   wrap.className = "msg bot full-width";
@@ -1359,69 +1380,55 @@ function renderScoreMsg(text) {
   av.className = "msg-avatar bot-av"; av.textContent = "Rx";
   var bub = document.createElement("div");
   bub.className = "bubble";
-  bub.style.cssText = "width:100%;max-width:100%;border-radius:var(--radius);";
+  bub.style.cssText = "width:100%;max-width:100%;border-radius:var(--radius);padding:14px;";
 
-  var inner = document.createElement("div");
-  inner.className = "score-full-wrap";
+  var sections = parseScoreSections(text);
 
-  // Score number bar
-  var sm = text.match(/S[\uff1a:\s]+(\d+)\s*\/\s*5[\s\S]*?O[\uff1a:\s]+(\d+)\s*\/\s*10[\s\S]*?A[\uff1a:\s]+(\d+)\s*\/\s*25[\s\S]*?P[\uff1a:\s]+(\d+)\s*\/\s*10/i);
-  if (sm) {
-    var total = +sm[1] + +sm[2] + +sm[3] + +sm[4];
-    var numBar = document.createElement("div");
-    numBar.className = "score-numbers";
-    numBar.innerHTML =
-      "<div class='score-num-item'><span class='score-num-label'>S</span><span class='score-num-val'>" + sm[1] + "/5</span></div>" +
-      "<div class='score-num-item'><span class='score-num-label'>O</span><span class='score-num-val'>" + sm[2] + "/10</span></div>" +
-      "<div class='score-num-item'><span class='score-num-label'>A</span><span class='score-num-val'>" + sm[3] + "/25</span></div>" +
-      "<div class='score-num-item'><span class='score-num-label'>P</span><span class='score-num-val'>" + sm[4] + "/10</span></div>" +
-      "<div class='score-total-val'>" + total + " / 50</div>";
-    inner.appendChild(numBar);
+  // ── Opening line (if any before first 【】) ──
+  var intro = (sections["__intro__"] || "").replace(/S[\uff1a:\s]+\d+[\s\S]*?Total[\uff1a:\s]+\d+\s*\/\s*50/i, "").trim();
+  if (intro) {
+    var introEl = document.createElement("div");
+    introEl.style.cssText = "font-size:13.5px;line-height:1.7;margin-bottom:12px;";
+    introEl.innerHTML = formatScoreText(intro);
+    bub.appendChild(introEl);
   }
 
-  // Strip score line and verbal block from body
-  var mainText = text
-    .replace(/【藥師 SOAP 評分】[\s\S]*?S[\uff1a:\s]+\d+.*?Total[\uff1a:\s]+\d+\s*\/\s*50/i, "")
-    .replace(/【藥師口頭摘要[^】]*】[\s\S]*$/, "")
-    .trim();
+  // ── 4 SOAP cards ──
+  var grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;";
 
-  // Split into sections by 【...】 headers
-  var parts = mainText.split(/(【[^】]+】)/);
-  var currentTitle = "";
-  var currentBody  = "";
+  // Build content for each card from relevant sections
+  var sColors = { color:"#0e7c72", bg:"#e6f4f2", border:"#b2ddd8" };
+  var oColors = { color:"#1d4ed8", bg:"#dbeafe", border:"#93c5fd" };
+  var aColors = { color:"#b45309", bg:"#fef3c7", border:"#fcd34d" };
+  var pColors = { color:"#7c3aed", bg:"#ede9fe", border:"#c4b5fd" };
 
-  function flushSection() {
-    if (!currentBody.trim()) return;
-    var sec = document.createElement("div");
-    sec.className = "score-section";
-    var html = "";
-    if (currentTitle) {
-      html += "<div class='score-section-title'>" + currentTitle.replace(/[【】]/g,"") + "</div>";
-    }
-    html += "<div class='score-body'>" + formatScoreText(currentBody.trim()) + "</div>";
-    sec.innerHTML = html;
-    inner.appendChild(sec);
-    currentTitle = "";
-    currentBody  = "";
-  }
+  // Gather content per SOAP section
+  // For S: look for sections mentioning S
+  var sContent = sections["\u505a\u5f97\u597d\u7684\u5730\u65b9"] || sections["Strength"] || "";
+  var oContent = sections["\u4e3b\u8981 DRP \u554f\u984c"] || sections["\u4e3b\u8981DRP\u554f\u984c"] || sections["Major DRP"] || "";
+  var aContent = sections["\u81e8\u5e8a\u63a8\u7406\u56de\u994b"] || sections["Assessment\u56de\u994b"] || sections["\u81e8\u5e8a\u63a8\u7406"] || "";
+  var pContent = sections["\u7f3a\u5c11\u7684\u91cd\u8981\u8cc7\u6599"] || sections["Missing"] || sections["\u7f3a\u5c11\u8cc7\u6599"] || "";
 
-  for (var i = 0; i < parts.length; i++) {
-    var p = parts[i].trim();
-    if (!p) continue;
-    if (/^【[^】]+】$/.test(p)) {
-      flushSection();
-      currentTitle = p;
-    } else {
-      currentBody += p + "\n";
-    }
-  }
-  flushSection();
+  // Fallback: use 做得好/主要/推理/缺少 pattern
+  var allKeys = Object.keys(sections);
+  allKeys.forEach(function(k) {
+    if (!sContent && /做得好|優點|strength/i.test(k)) sContent = sections[k];
+    if (!oContent && /DRP|問題|concern/i.test(k)) oContent = sections[k];
+    if (!aContent && /推理|回饋|feedback|assessment/i.test(k)) aContent = sections[k];
+    if (!pContent && /缺少|missing|重要資料/i.test(k)) pContent = sections[k];
+  });
 
-  // Verbal summary below all sections
+  grid.appendChild(makeSoapCard("S", "\u505a\u5f97\u597d\u7684\u5730\u65b9", sColors.color, sColors.bg, sColors.border, sContent));
+  grid.appendChild(makeSoapCard("O", "\u4e3b\u8981 DRP \u554f\u984c", oColors.color, oColors.bg, oColors.border, oContent));
+  grid.appendChild(makeSoapCard("A", "\u81e8\u5e8a\u63a8\u7406\u56de\u994b", aColors.color, aColors.bg, aColors.border, aContent));
+  grid.appendChild(makeSoapCard("P", "\u7f3a\u5c11\u7684\u91cd\u8981\u8cc7\u6599", pColors.color, pColors.bg, pColors.border, pContent));
+  bub.appendChild(grid);
+
+  // ── Verbal Summary ──
   var verbal = extractVerbalSummary(text);
-  if (verbal) inner.appendChild(renderVerbalCard(verbal.en, verbal.zh));
+  if (verbal) bub.appendChild(renderVerbalCard(verbal.en, verbal.zh));
 
-  bub.appendChild(inner);
   wrap.appendChild(av);
   wrap.appendChild(bub);
   return wrap;
@@ -1644,6 +1651,7 @@ function selectCase(idx) {
       var welcomeEl = renderBotMsg(openMsg);
       msgsDiv.appendChild(welcomeEl);
       st.history.push({ role: "assistant", content: openMsg });
+      // Add quick options for ALL cases (not just case 0)
       addQuickOptions(welcomeEl, getQuickOpts(idx));
     }
   }
@@ -1920,6 +1928,19 @@ function submitFreeCase() {
 }
 
 // ── Init ────────────────────────────────────────────────────
+// Clear stale case 2 data if it's from the old 張國輝 case
+(function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem("soap_tutor_builtin") || "{}");
+    if (saved[2] && saved[2].history) {
+      var firstMsg = saved[2].history[0] && saved[2].history[0].content || "";
+      if (firstMsg.indexOf("張國輝") >= 0 || firstMsg.indexOf("Digoxin") >= 0 || firstMsg.indexOf("Warfarin") >= 0) {
+        delete saved[2];
+        localStorage.setItem("soap_tutor_builtin", JSON.stringify(saved));
+      }
+    }
+  } catch(e) {}
+})();
 renderSavedCasesList();
 selectCase(0);
 
