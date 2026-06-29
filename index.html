@@ -973,7 +973,7 @@ textarea::placeholder { color: var(--ink-dim); }
 
 <script>
 // ── API Key ────────────────────────────────────────────────
-const API_KEY = "sk-XaxmOid7iLHbX5tpRq25NgLO9wEV1WDMH2dT2oyT47x6kwPh";
+const API_KEY = "sk-XaxmOid7iLHbX5tpRq25NgLO9wEV1WDMH2dT2oyT47x6kwPh"; 
 
 // ── Constants ──────────────────────────────────────────────
 const FREE_IDX = 3;
@@ -1215,24 +1215,24 @@ async function callClaude(userMsg) {
 
   st.history.push({ role: "user", content: userMsg });
 
-  var res = await fetch("https://api.anthropic.com/v1/messages", {
+  // CometAPI 使用 OpenAI 相容格式
+  var cometMessages = [{ role: "system", content: system }].concat(st.history);
+
+  var res = await fetch("https://api.cometapi.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
+      "Authorization": "Bearer " + API_KEY
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-4-5",
       max_tokens: 1200,
-      system: system,
-      messages: st.history
+      messages: cometMessages
     })
   });
   if (!res.ok) { var t = await res.text(); throw new Error("API "+res.status+": "+t); }
   var data  = await res.json();
-  var reply = (data.content && data.content[0] && data.content[0].text) || "系統發生錯誤，請再試一次。";
+  var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "系統發生錯誤，請再試一次。";
   st.history.push({ role: "assistant", content: reply });
 
   // Parse scores
