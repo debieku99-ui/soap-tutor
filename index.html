@@ -1321,10 +1321,13 @@ function renderVerbalCard(en, zh) {
   return card;
 }
 
+// ── Last student message (for SOAP display in score card) ──
+var _lastUserMsg = "";
+
 function formatScoreText(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-    .replace(/【(.*?)】/g, "<b style='color:var(--teal)'>【$1】</b>")
+    .replace(/【(.*?)】/g, "<b style='color:#374151'>【$1】</b>")
     .replace(/✓([^\n]*)/g, "<span class='fb-item fb-good'>$1</span>")
     .replace(/△([^\n]*)/g, "<span class='fb-item fb-warn'>$1</span>")
     .replace(/✗([^\n]*)/g, "<span class='fb-item fb-bad'>$1</span>")
@@ -1333,7 +1336,6 @@ function formatScoreText(text) {
 }
 
 function parseScoreSections(text) {
-  // Extract all 【...】 sections into a map
   var map = {};
   var parts = text.split(/(【[^】]+】)/);
   var currentKey = "__intro__";
@@ -1347,83 +1349,149 @@ function parseScoreSections(text) {
       map[currentKey] = (map[currentKey] || "") + p;
     }
   }
-  // Clean up each value
   Object.keys(map).forEach(function(k) {
     map[k] = map[k].replace(/^\s+|\s+$/g, "");
   });
   return map;
 }
 
-function makeSoapCard(letter, title, color, bg, border, content) {
+// Extract S/O/A/P from student's raw message
+function parseStudentSOAP(msg) {
+  if (!msg) return { s:"", o:"", a:"", p:"" };
+  // Try to split by S: O: A: P: markers (flexible)
+  var result = { s:"", o:"", a:"", p:"" };
+  var clean = msg.replace(/\r\n/g, "\n");
+
+  // Match patterns like S: S：S - Subjective etc.
+  var sMatch = clean.match(/[Ss][：:\s＊\-]{0,3}([^\n]*(?:\n(?![OoAaPp][：:\s＊\-])[^\n]*)*)/);
+  var oMatch = clean.match(/[Oo][：:\s＊\-]{0,3}([^\n]*(?:\n(?![AaPp][：:\s＊\-])[^\n]*)*)/);
+  var aMatch = clean.match(/[Aa][：:\s＊\-]{0,3}([^\n]*(?:\n(?![Pp][：:\s＊\-])[^\n]*)*)/);
+  var pMatch = clean.match(/[Pp][：:\s＊\-]{0,3}([^\n]*(?:\n[^\n]*)*)/);
+
+  if (sMatch) result.s = sMatch[1].trim();
+  if (oMatch) result.o = oMatch[1].trim();
+  if (aMatch) result.a = aMatch[1].trim();
+  if (pMatch) result.p = pMatch[1].trim();
+
+  // If no SOAP markers found, put entire message in A (assessment) as raw
+  if (!result.s && !result.o && !result.a && !result.p) {
+    result.a = msg.trim();
+  }
+  return result;
+}
+
+function makeStudentCard(letter, title, textContent, color, bg) {
   var card = document.createElement("div");
-  card.style.cssText = "border:1.5px solid " + border + ";border-radius:8px;overflow:hidden;";
+  card.style.cssText = "border-radius:8px;overflow:hidden;background:" + bg + ";";
 
   var header = document.createElement("div");
   header.style.cssText = "background:" + color + ";padding:7px 12px;display:flex;align-items:center;gap:8px;";
   header.innerHTML =
-    "<span style='background:white;color:" + color + ";font-family:JetBrains Mono,monospace;font-weight:700;font-size:11px;padding:2px 6px;border-radius:3px;'>" + letter + "</span>" +
-    "<span style='color:white;font-size:12px;font-weight:600;'>" + title + "</span>";
+    "<span style='background:rgba(255,255,255,0.25);color:white;font-family:JetBrains Mono,monospace;font-weight:700;font-size:12px;padding:2px 7px;border-radius:4px;'>" + letter + "</span>" +
+    "<span style='color:rgba(255,255,255,0.9);font-size:11px;font-weight:500;'>" + title + "</span>";
 
   var body = document.createElement("div");
-  body.style.cssText = "background:" + bg + ";padding:10px 14px;font-size:13px;line-height:1.7;color:var(--ink);min-height:48px;";
-  body.innerHTML = content ? formatScoreText(content) : "<span style='color:var(--ink-dim)'>—</span>";
+  body.style.cssText = "padding:10px 14px;font-size:12.5px;line-height:1.7;color:#374151;min-height:52px;white-space:pre-wrap;word-break:break-word;";
+  body.textContent = textContent || "（未填寫）";
 
   card.appendChild(header);
   card.appendChild(body);
   return card;
 }
 
-function renderScoreMsg(text) {
+function makeFeedbackCard(icon, title, htmlContent, borderColor, headerBg, bodyBg) {
+  var card = document.createElement("div");
+  card.style.cssText = "border:1.5px solid " + borderColor + ";border-radius:8px;overflow:hidden;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "background:" + headerBg + ";padding:8px 14px;display:flex;align-items:center;gap:7px;";
+  header.innerHTML =
+    "<span style='font-size:14px;'>" + icon + "</span>" +
+    "<span style='font-size:12px;font-weight:600;color:#1f2937;'>" + title + "</span>";
+
+  var body = document.createElement("div");
+  body.style.cssText = "background:" + bodyBg + ";padding:10px 14px;font-size:13px;line-height:1.75;color:#374151;min-height:52px;";
+  body.innerHTML = htmlContent ? formatScoreText(htmlContent) : "<span style='color:#9ca3af'>（無資料）</span>";
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
+function renderScoreMsg(text, studentMsg) {
   var wrap = document.createElement("div");
   wrap.className = "msg bot full-width";
   var av = document.createElement("div");
   av.className = "msg-avatar bot-av"; av.textContent = "Rx";
   var bub = document.createElement("div");
   bub.className = "bubble";
-  bub.style.cssText = "width:100%;max-width:none;border-radius:var(--radius);padding:14px;box-sizing:border-box;";
+  bub.style.cssText = "width:100%;max-width:none;border-radius:var(--radius);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;";
 
+  // ── Section 1: Student's SOAP ──
+  var studentSoap = parseStudentSOAP(studentMsg || _lastUserMsg);
+  var hasSOAP = studentSoap.s || studentSoap.o || studentSoap.a || studentSoap.p;
+
+  if (hasSOAP) {
+    var soapSection = document.createElement("div");
+
+    var soapLabel = document.createElement("div");
+    soapLabel.style.cssText = "font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:8px;";
+    soapLabel.textContent = "你的 SOAP";
+    soapSection.appendChild(soapLabel);
+
+    var soapGrid = document.createElement("div");
+    soapGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;";
+    soapGrid.appendChild(makeStudentCard("S", "Subjective", studentSoap.s, "#0e7c72", "#f0faf8"));
+    soapGrid.appendChild(makeStudentCard("O", "Objective",  studentSoap.o, "#1d4ed8", "#eff6ff"));
+    soapGrid.appendChild(makeStudentCard("A", "Assessment", studentSoap.a, "#b45309", "#fffbeb"));
+    soapGrid.appendChild(makeStudentCard("P", "Plan",       studentSoap.p, "#7c3aed", "#f5f3ff"));
+    soapSection.appendChild(soapGrid);
+    bub.appendChild(soapSection);
+  }
+
+  // ── Divider ──
+  var divider = document.createElement("div");
+  divider.style.cssText = "border-top:1.5px dashed #e5e7eb;";
+  bub.appendChild(divider);
+
+  // ── Section 2: Feedback cards ──
+  var fbLabel = document.createElement("div");
+  fbLabel.style.cssText = "font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:8px;";
+  fbLabel.textContent = "導師回饋";
+  bub.appendChild(fbLabel);
+
+  // Parse AI feedback sections
   var sections = parseScoreSections(text);
+  var allKeys  = Object.keys(sections);
 
-  // ── Opening line (if any before first 【】) ──
+  var goodContent = sections["做得好的地方"] || "";
+  var drpContent  = sections["主要 DRP 問題"] || "";
+  var asmContent  = sections["臨床推理回饋"] || "";
+  var misContent  = sections["缺少的重要資料"] || "";
+
+  allKeys.forEach(function(k) {
+    if (!goodContent && /做得好|優點|strength/i.test(k))    goodContent = sections[k];
+    if (!drpContent  && /DRP|問題|concern/i.test(k))         drpContent  = sections[k];
+    if (!asmContent  && /推理|回饋|feedback|assessment/i.test(k)) asmContent = sections[k];
+    if (!misContent  && /缺少|missing|重要資料/i.test(k))    misContent  = sections[k];
+  });
+
+  var fbGrid = document.createElement("div");
+  fbGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;";
+  fbGrid.appendChild(makeFeedbackCard("✅", "做得好的地方",   goodContent, "#d1fae5", "#ecfdf5", "#f0fdf4"));
+  fbGrid.appendChild(makeFeedbackCard("⚠️", "主要 DRP 問題",  drpContent,  "#fed7aa", "#fff7ed", "#fffbf5"));
+  fbGrid.appendChild(makeFeedbackCard("💡", "臨床推理回饋",   asmContent,  "#fde68a", "#fefce8", "#fffef0"));
+  fbGrid.appendChild(makeFeedbackCard("📋", "缺少的重要資料", misContent,  "#e0e7ff", "#eef2ff", "#f5f7ff"));
+  bub.appendChild(fbGrid);
+
+  // ── Opening intro if any ──
   var intro = (sections["__intro__"] || "").replace(/S[\uff1a:\s]+\d+[\s\S]*?Total[\uff1a:\s]+\d+\s*\/\s*50/i, "").trim();
   if (intro) {
     var introEl = document.createElement("div");
-    introEl.style.cssText = "font-size:13.5px;line-height:1.7;margin-bottom:12px;";
+    introEl.style.cssText = "font-size:13px;line-height:1.7;color:#374151;padding:8px 0 0;border-top:1px solid #f3f4f6;";
     introEl.innerHTML = formatScoreText(intro);
     bub.appendChild(introEl);
   }
-
-  // ── 4 SOAP cards ──
-  var grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;width:100%;";
-
-  // Build content for each card from relevant sections
-  var sColors = { color:"#0e7c72", bg:"#e6f4f2", border:"#b2ddd8" };
-  var oColors = { color:"#1d4ed8", bg:"#dbeafe", border:"#93c5fd" };
-  var aColors = { color:"#b45309", bg:"#fef3c7", border:"#fcd34d" };
-  var pColors = { color:"#7c3aed", bg:"#ede9fe", border:"#c4b5fd" };
-
-  // Gather content per SOAP section
-  // For S: look for sections mentioning S
-  var sContent = sections["\u505a\u5f97\u597d\u7684\u5730\u65b9"] || sections["Strength"] || "";
-  var oContent = sections["\u4e3b\u8981 DRP \u554f\u984c"] || sections["\u4e3b\u8981DRP\u554f\u984c"] || sections["Major DRP"] || "";
-  var aContent = sections["\u81e8\u5e8a\u63a8\u7406\u56de\u994b"] || sections["Assessment\u56de\u994b"] || sections["\u81e8\u5e8a\u63a8\u7406"] || "";
-  var pContent = sections["\u7f3a\u5c11\u7684\u91cd\u8981\u8cc7\u6599"] || sections["Missing"] || sections["\u7f3a\u5c11\u8cc7\u6599"] || "";
-
-  // Fallback: use 做得好/主要/推理/缺少 pattern
-  var allKeys = Object.keys(sections);
-  allKeys.forEach(function(k) {
-    if (!sContent && /做得好|優點|strength/i.test(k)) sContent = sections[k];
-    if (!oContent && /DRP|問題|concern/i.test(k)) oContent = sections[k];
-    if (!aContent && /推理|回饋|feedback|assessment/i.test(k)) aContent = sections[k];
-    if (!pContent && /缺少|missing|重要資料/i.test(k)) pContent = sections[k];
-  });
-
-  grid.appendChild(makeSoapCard("S", "\u505a\u5f97\u597d\u7684\u5730\u65b9", sColors.color, sColors.bg, sColors.border, sContent));
-  grid.appendChild(makeSoapCard("O", "\u4e3b\u8981 DRP \u554f\u984c", oColors.color, oColors.bg, oColors.border, oContent));
-  grid.appendChild(makeSoapCard("A", "\u81e8\u5e8a\u63a8\u7406\u56de\u994b", aColors.color, aColors.bg, aColors.border, aContent));
-  grid.appendChild(makeSoapCard("P", "\u7f3a\u5c11\u7684\u91cd\u8981\u8cc7\u6599", pColors.color, pColors.bg, pColors.border, pContent));
-  bub.appendChild(grid);
 
   // ── Verbal Summary ──
   var verbal = extractVerbalSummary(text);
@@ -1434,8 +1502,8 @@ function renderScoreMsg(text) {
   return wrap;
 }
 
-function renderBotMsg(text) {
-  if (/【藥師 SOAP 評分】/.test(text)) return renderScoreMsg(text);
+function renderBotMsg(text, studentMsg) {
+  if (/【藥師 SOAP 評分】/.test(text)) return renderScoreMsg(text, studentMsg || _lastUserMsg);
 
   var wrap = document.createElement("div");
   wrap.className = "msg bot";
@@ -1450,7 +1518,7 @@ function renderBotMsg(text) {
     .replace(/【(.*?)】/g, "<b style='color:var(--teal)'>【$1】</b>")
     .replace(/\[S\]/g, "<span class='soap-tag tag-s'>S</span>")
     .replace(/\[O\]/g, "<span class='soap-tag tag-o'>O</span>")
-    .replace(/\[A\]/g, "<span class='soap-tag tag-a'>A</span>")
+    .replace(/\[A\]/g, "<span class='soap-tag tag-a">A</span>")
     .replace(/\[P\]/g, "<span class='soap-tag tag-p'>P</span>")
     .replace(/✓([^\n]*)/g, "<span class='fb-item fb-good'>$1</span>")
     .replace(/△([^\n]*)/g, "<span class='fb-item fb-warn'>$1</span>")
@@ -1521,6 +1589,7 @@ async function sendMessage() {
   document.getElementById("sendBtn").disabled = true;
   inp.value = ""; inp.style.height = "42px";
 
+  _lastUserMsg = text; // track for score card
   var msgs = cs().domNode;
   msgs.appendChild(renderUserMsg(text));
   var thinking = renderThinking();
@@ -1530,7 +1599,7 @@ async function sendMessage() {
   try {
     var reply = await callClaude(text);
     thinking.remove();
-    msgs.appendChild(renderBotMsg(reply));
+    msgs.appendChild(renderBotMsg(reply, text));
   } catch(e) {
     thinking.remove();
     msgs.appendChild(renderBotMsg("⚠ 連線錯誤：" + e.message));
@@ -1929,7 +1998,7 @@ function submitFreeCase() {
 // Version check: clear all localStorage if layout version changed
 (function() {
   try {
-    var LAYOUT_VER = "v4-fourgrid";
+    var LAYOUT_VER = "v5-soap-split";
     if (localStorage.getItem("soap_tutor_layout_ver") !== LAYOUT_VER) {
       localStorage.removeItem("soap_tutor_builtin");
       localStorage.setItem("soap_tutor_layout_ver", LAYOUT_VER);
