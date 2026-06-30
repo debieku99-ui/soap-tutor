@@ -1106,7 +1106,8 @@ function buildSystem(c) {
 "- 問學生：「你要 monitor 什麼？多久追蹤一次？」\n\n" +
 "【評分時機】\n" +
 "只有在學生完整寫出 S、O、A、P 四個部分後，才進行評分。\n" +
-"若學生只寫了部分，請提醒他補完再評分。\n\n" +
+"學生可能在對話過程中分多次輸入 S、O、A、P 的內容——你可以根據整個對話歷史中學生寫過的內容來進行評分，不需要要求學生重新彙整貼上完整 SOAP。\n" +
+"若目前對話中 S、O、A、P 都已涵蓋，直接評分即可。\n\n" +
 "【評分格式】完整 SOAP 提交後使用以下格式：\n" +
 "【藥師 SOAP 評分】\n" +
 "S：x/5　O：x/10　A：x/25　P：x/10　Total：x/50\n" +
@@ -1323,6 +1324,33 @@ function renderVerbalCard(en, zh) {
 // ── Last student message (for SOAP display in score card) ──
 var _lastUserMsg = "";
 
+// Find the most complete SOAP message from conversation history
+function findBestSOAPMsg(history) {
+  if (!history || history.length === 0) return _lastUserMsg;
+  var best = { msg: _lastUserMsg, score: 0 };
+  history.forEach(function(entry) {
+    if (entry.role !== "user") return;
+    var msg = entry.content;
+    var score = 0;
+    // Count how many SOAP sections are present
+    var lines = msg.split(/[\r\n]+/);
+    var hasS = false, hasO = false, hasA = false, hasP = false;
+    lines.forEach(function(line) {
+      var stripped = line.replace(/^[ \t]+/, "");
+      if (/^S[：:]/.test(stripped)) hasS = true;
+      if (/^O[：:]/.test(stripped)) hasO = true;
+      if (/^A[：:]/.test(stripped)) hasA = true;
+      if (/^P[：:]/.test(stripped)) hasP = true;
+    });
+    if (hasS) score += 1;
+    if (hasO) score += 1;
+    if (hasA) score += 2; // Assessment is most important
+    if (hasP) score += 2;
+    if (score > best.score) best = { msg: msg, score: score };
+  });
+  return best.msg;
+}
+
 function formatScoreText(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
@@ -1359,45 +1387,35 @@ function parseStudentSOAP(msg) {
   if (!msg) return { s:"", o:"", a:"", p:"" };
 
   var result = { s:"", o:"", a:"", p:"" };
-  var clean = msg.replace(/\r\n/g, "\n");
+  var clean  = msg.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  var lines  = clean.split("\n");
 
-  // Find positions of S: O: A: P: markers (support half/full-width colon, space, dash)
-  // Markers: S： S: S- or just S at start of line followed by colon
-  var markerRe = /(?:^|\n)[ \t]*([SOAPsoap])[：:\s]*(?=[^\n])/g;
-  var markers  = [];
-  var m;
-  while ((m = markerRe.exec(clean)) !== null) {
-    markers.push({ letter: m[1].toUpperCase(), pos: m.index + (m[0].startsWith("\n") ? 1 : 0) });
-  }
+  // Match lines that start with exactly one SOAP letter followed by ： or :
+  // e.g. "S：", "O：T：38.7", "P:", "A："
+  var segments = [];
+  var soapRe   = /^([SOAPsoap])[：:]/;
+  lines.forEach(function(line, i) {
+    var stripped = line.replace(/^[ \t]+/, "");
+    if (soapRe.test(stripped)) {
+      segments.push({ letter: stripped[0].toUpperCase(), startLine: i });
+    }
+  });
 
-  if (markers.length === 0) {
-    // No markers found - try splitting by explicit S：/O：/A：/P： anywhere in text
-    var parts = clean.split(/(?=[SOAPsoap][：:][\s\S])/);
-    parts.forEach(function(part) {
-      var letter = part[0] && part[0].toUpperCase();
-      var body   = part.slice(2).trim(); // skip "X："
-      if (letter === "S") result.s = body;
-      else if (letter === "O") result.o = body;
-      else if (letter === "A") result.a = body;
-      else if (letter === "P") result.p = body;
-    });
-    // Last resort: whole text into A
-    if (!result.s && !result.o && !result.a && !result.p) result.a = msg.trim();
+  if (segments.length === 0) {
+    // No markers at all - put whole text in A
+    result.A = msg.trim();
     return result;
   }
 
   // Extract content between markers
-  for (var i = 0; i < markers.length; i++) {
-    var start  = markers[i].pos;
-    var end    = i + 1 < markers.length ? markers[i+1].pos : clean.length;
-    var body   = clean.slice(start, end);
-    // Remove the marker letter + colon from the start
-    body = body.replace(/^[ \t]*[SOAPsoap][：:\s]+/, "").trim();
-    var letter = markers[i].letter;
-    if (letter === "S") result.s = body;
-    else if (letter === "O") result.o = body;
-    else if (letter === "A") result.a = body;
-    else if (letter === "P") result.p = body;
+  for (var i = 0; i < segments.length; i++) {
+    var startLine = segments[i].startLine;
+    var endLine   = i + 1 < segments.length ? segments[i+1].startLine : lines.length;
+    var bodyLines = lines.slice(startLine, endLine);
+    // Remove the marker letter + colon from first line
+    bodyLines[0]  = bodyLines[0].replace(/^[ \t]*[SOAPsoap][：:][ \t]*/, "");
+    var body = bodyLines.join("\n").trim();
+    result[segments[i].letter] = body;
   }
 
   return result;
@@ -1451,7 +1469,9 @@ function renderScoreMsg(text, studentMsg) {
   bub.style.cssText = "width:100%;max-width:none;border-radius:var(--radius);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;";
 
   // ── Section 1: Student's SOAP ──
-  var studentSoap = parseStudentSOAP(studentMsg || _lastUserMsg);
+  // Find best SOAP from history, fallback to current message
+  var bestMsg = findBestSOAPMsg(cs().history);
+  var studentSoap = parseStudentSOAP(bestMsg || studentMsg || _lastUserMsg);
   var hasSOAP = studentSoap.s || studentSoap.o || studentSoap.a || studentSoap.p;
 
   if (hasSOAP) {
