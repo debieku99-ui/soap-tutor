@@ -800,8 +800,8 @@ textarea::placeholder { color: var(--ink-dim); }
 .saved-del-btn:hover { background: var(--red-lt); color: var(--red); }
 
 /* Full-width score layout */
-.msg.bot.full-width { max-width: 100%; align-self: stretch; }
-.msg.bot.full-width .bubble { flex:1; border-radius:var(--radius); }
+.msg.bot.full-width { max-width: 100% !important; align-self: stretch !important; width: 100%; }
+.msg.bot.full-width .bubble { flex:1; border-radius:var(--radius); min-width:0; width:100%; }
 .score-full-wrap { display:flex; flex-direction:column; gap:12px; width:100%; }
 
 
@@ -1380,7 +1380,7 @@ function renderScoreMsg(text) {
   av.className = "msg-avatar bot-av"; av.textContent = "Rx";
   var bub = document.createElement("div");
   bub.className = "bubble";
-  bub.style.cssText = "width:100%;max-width:100%;border-radius:var(--radius);padding:14px;";
+  bub.style.cssText = "width:100%;max-width:none;border-radius:var(--radius);padding:14px;box-sizing:border-box;";
 
   var sections = parseScoreSections(text);
 
@@ -1395,7 +1395,7 @@ function renderScoreMsg(text) {
 
   // ── 4 SOAP cards ──
   var grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;";
+  grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;width:100%;";
 
   // Build content for each card from relevant sections
   var sColors = { color:"#0e7c72", bg:"#e6f4f2", border:"#b2ddd8" };
@@ -1926,12 +1926,18 @@ function submitFreeCase() {
 }
 
 // ── Init ────────────────────────────────────────────────────
-// Clear stale case 2 data if it's from the old 張國輝 case
+// Version check: clear all localStorage if layout version changed
 (function() {
   try {
+    var LAYOUT_VER = "v4-fourgrid";
+    if (localStorage.getItem("soap_tutor_layout_ver") !== LAYOUT_VER) {
+      localStorage.removeItem("soap_tutor_builtin");
+      localStorage.setItem("soap_tutor_layout_ver", LAYOUT_VER);
+    }
+    // Also clear stale case 2 data from old 張國輝 case
     var saved = JSON.parse(localStorage.getItem("soap_tutor_builtin") || "{}");
     if (saved[2] && saved[2].history) {
-      var firstMsg = saved[2].history[0] && saved[2].history[0].content || "";
+      var firstMsg = (saved[2].history[0] && saved[2].history[0].content) || "";
       if (firstMsg.indexOf("張國輝") >= 0 || firstMsg.indexOf("Digoxin") >= 0 || firstMsg.indexOf("Warfarin") >= 0) {
         delete saved[2];
         localStorage.setItem("soap_tutor_builtin", JSON.stringify(saved));
