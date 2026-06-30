@@ -1110,11 +1110,10 @@ function buildSystem(c) {
 "【評分格式】完整 SOAP 提交後使用以下格式：\n" +
 "【藥師 SOAP 評分】\n" +
 "S：x/5　O：x/10　A：x/25　P：x/10　Total：x/50\n" +
-"【做得好的地方】\n" +
-"【主要 DRP 問題】\n" +
-"【缺少的重要資料】\n" +
-"【臨床推理回饋】\n" +
-"【核心 DRP 是什麼】\n\n" +
+"【優點】\n" +
+"（條列學生做得好的地方，2-4點，每點一行，簡潔）\n" +
+"【待改善】\n" +
+"（條列最重要的改善方向，2-4點，每點一行，聚焦在 DRP 推理與 Plan 的具體性）\n\n" +
 "【Verbal Summary】評分之後，輸出以下區塊：\n\n" +
 "【藥師口頭摘要 Verbal Summary】\n" +
 "（說明：這是真實藥師在查房或與醫師溝通時的口語英文，簡潔、直接，2–4 句）\n\n" +
@@ -1358,25 +1357,49 @@ function parseScoreSections(text) {
 // Extract S/O/A/P from student's raw message
 function parseStudentSOAP(msg) {
   if (!msg) return { s:"", o:"", a:"", p:"" };
-  // Try to split by S: O: A: P: markers (flexible)
+
   var result = { s:"", o:"", a:"", p:"" };
   var clean = msg.replace(/\r\n/g, "\n");
 
-  // Match patterns like S: S：S - Subjective etc.
-  var sMatch = clean.match(/[Ss][：:\s＊\-]{0,3}([^\n]*(?:\n(?![OoAaPp][：:\s＊\-])[^\n]*)*)/);
-  var oMatch = clean.match(/[Oo][：:\s＊\-]{0,3}([^\n]*(?:\n(?![AaPp][：:\s＊\-])[^\n]*)*)/);
-  var aMatch = clean.match(/[Aa][：:\s＊\-]{0,3}([^\n]*(?:\n(?![Pp][：:\s＊\-])[^\n]*)*)/);
-  var pMatch = clean.match(/[Pp][：:\s＊\-]{0,3}([^\n]*(?:\n[^\n]*)*)/);
-
-  if (sMatch) result.s = sMatch[1].trim();
-  if (oMatch) result.o = oMatch[1].trim();
-  if (aMatch) result.a = aMatch[1].trim();
-  if (pMatch) result.p = pMatch[1].trim();
-
-  // If no SOAP markers found, put entire message in A (assessment) as raw
-  if (!result.s && !result.o && !result.a && !result.p) {
-    result.a = msg.trim();
+  // Find positions of S: O: A: P: markers (support half/full-width colon, space, dash)
+  // Markers: S： S: S- or just S at start of line followed by colon
+  var markerRe = /(?:^|\n)[ \t]*([SOAPsoap])[：:\s]*(?=[^\n])/g;
+  var markers  = [];
+  var m;
+  while ((m = markerRe.exec(clean)) !== null) {
+    markers.push({ letter: m[1].toUpperCase(), pos: m.index + (m[0].startsWith("\n") ? 1 : 0) });
   }
+
+  if (markers.length === 0) {
+    // No markers found - try splitting by explicit S：/O：/A：/P： anywhere in text
+    var parts = clean.split(/(?=[SOAPsoap][：:][\s\S])/);
+    parts.forEach(function(part) {
+      var letter = part[0] && part[0].toUpperCase();
+      var body   = part.slice(2).trim(); // skip "X："
+      if (letter === "S") result.s = body;
+      else if (letter === "O") result.o = body;
+      else if (letter === "A") result.a = body;
+      else if (letter === "P") result.p = body;
+    });
+    // Last resort: whole text into A
+    if (!result.s && !result.o && !result.a && !result.p) result.a = msg.trim();
+    return result;
+  }
+
+  // Extract content between markers
+  for (var i = 0; i < markers.length; i++) {
+    var start  = markers[i].pos;
+    var end    = i + 1 < markers.length ? markers[i+1].pos : clean.length;
+    var body   = clean.slice(start, end);
+    // Remove the marker letter + colon from the start
+    body = body.replace(/^[ \t]*[SOAPsoap][：:\s]+/, "").trim();
+    var letter = markers[i].letter;
+    if (letter === "S") result.s = body;
+    else if (letter === "O") result.o = body;
+    else if (letter === "A") result.a = body;
+    else if (letter === "P") result.p = body;
+  }
+
   return result;
 }
 
@@ -1464,24 +1487,30 @@ function renderScoreMsg(text, studentMsg) {
   var sections = parseScoreSections(text);
   var allKeys  = Object.keys(sections);
 
-  var goodContent = sections["做得好的地方"] || "";
-  var drpContent  = sections["主要 DRP 問題"] || "";
+  var goodContent = sections["優點"] || sections["做得好的地方"] || "";
+  var drpContent  = sections["待改善"] || sections["主要 DRP 問題"] || "";
   var asmContent  = sections["臨床推理回饋"] || "";
   var misContent  = sections["缺少的重要資料"] || "";
 
   allKeys.forEach(function(k) {
-    if (!goodContent && /做得好|優點|strength/i.test(k))    goodContent = sections[k];
-    if (!drpContent  && /DRP|問題|concern/i.test(k))         drpContent  = sections[k];
+    if (!goodContent && /優點|做得好|strength/i.test(k))      goodContent = sections[k];
+    if (!drpContent  && /待改善|DRP|問題|concern/i.test(k))   drpContent  = sections[k];
     if (!asmContent  && /推理|回饋|feedback|assessment/i.test(k)) asmContent = sections[k];
-    if (!misContent  && /缺少|missing|重要資料/i.test(k))    misContent  = sections[k];
+    if (!misContent  && /缺少|missing|重要資料/i.test(k))      misContent  = sections[k];
   });
 
+  // Parse 優點 and 待改善
+  var goodContent2 = sections["優點"] || sections["做得好的地方"] || goodContent;
+  var improveContent = sections["待改善"] || sections["主要 DRP 問題"] || drpContent;
+  // Merge asmContent and misContent into improveContent if no 待改善 section
+  if (!sections["待改善"] && (asmContent || misContent)) {
+    improveContent = [improveContent, asmContent, misContent].filter(Boolean).join("\n\n");
+  }
+
   var fbGrid = document.createElement("div");
-  fbGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;";
-  fbGrid.appendChild(makeFeedbackCard("✅", "做得好的地方",   goodContent, "#d1fae5", "#ecfdf5", "#f0fdf4"));
-  fbGrid.appendChild(makeFeedbackCard("⚠️", "主要 DRP 問題",  drpContent,  "#fed7aa", "#fff7ed", "#fffbf5"));
-  fbGrid.appendChild(makeFeedbackCard("💡", "臨床推理回饋",   asmContent,  "#fde68a", "#fefce8", "#fffef0"));
-  fbGrid.appendChild(makeFeedbackCard("📋", "缺少的重要資料", misContent,  "#e0e7ff", "#eef2ff", "#f5f7ff"));
+  fbGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;";
+  fbGrid.appendChild(makeFeedbackCard("✅", "優點",    goodContent2,    "#d1fae5", "#ecfdf5", "#f0fdf4"));
+  fbGrid.appendChild(makeFeedbackCard("📝", "待改善",  improveContent,  "#fde68a", "#fefce8", "#fffef5"));
   bub.appendChild(fbGrid);
 
   // ── Opening intro if any ──
@@ -1998,7 +2027,7 @@ function submitFreeCase() {
 // Version check: clear all localStorage if layout version changed
 (function() {
   try {
-    var LAYOUT_VER = "v5-soap-split";
+    var LAYOUT_VER = "v6-two-cards";
     if (localStorage.getItem("soap_tutor_layout_ver") !== LAYOUT_VER) {
       localStorage.removeItem("soap_tutor_builtin");
       localStorage.setItem("soap_tutor_layout_ver", LAYOUT_VER);
